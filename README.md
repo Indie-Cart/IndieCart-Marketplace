@@ -15,17 +15,12 @@
 1.Clone the repo (if not already done):
 
     git clone https://github.com/Indie-Cart/IndieCart-Marketplace.git
-    cd backend
 
-2. Install dependencies:
+2.Start the server:
 
-    npm install
+    npm start
 
-3.Start the server:
-
-    node server.js
-
-4. Open the app: 
+3. Open the app: 
 
     Open your browser and go to http://localhost:8080/
 
