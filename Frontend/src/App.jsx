@@ -7,7 +7,7 @@ function App() {
   const { isAuthenticated, user, logout } = useAuth0();
 
   return (
-    <div>
+    <>
       <HomePage />
       
       {isAuthenticated ? (
@@ -20,7 +20,7 @@ function App() {
       ) : (
         <LoginButton />
       )}
-    </div>
+    </>
   );
 }
 
