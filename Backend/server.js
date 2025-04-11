@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const path = require('path');
+const PORT = process.env.PORT || 8080;
 
 //test api
 app.get('/tshirt', (req, res) => {
@@ -16,6 +17,6 @@ app.get('/*splat', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/dist/index.html'))
 });
 
-app.listen(8080, () => {
-    console.log(`It's alive on http://localhost:8080`)
+app.listen(PORT, () => {
+    console.log(`It's alive on http://localhost:${PORT}`)
 });
