@@ -4,7 +4,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node Backend/server.js",
-    "test": "echo 'Error: no test specified' && exit 1"
+    "test": "echo 'Error: no test specified' && exit 1",
+    "build": "cd Frontend && npm run build",
+    "postinstall": "cd Frontend && npm install && npm run build"
   },
   "dependencies": {
     "express": "^5.1.0"
