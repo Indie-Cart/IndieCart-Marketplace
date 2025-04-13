@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './HomePage.css';
 import { useAuth0 } from "@auth0/auth0-react";
 
@@ -46,10 +47,10 @@ function HomePage() {
           <h1 className="shop-name">IndieCart</h1>
           <nav>
             <ul>
-              <li><a href="#" className="active">Home</a></li>
-              <li><a href="#">Browse Projects</a></li>
+              <li><Link to="/" className="active">Home</Link></li>
+              <li><Link to="#">Browse Projects</Link></li>
               <li><a href="#" onClick={(e) => { e.preventDefault(); loginWithRedirect(); }}>Become a Seller</a></li>
-              <li><a href="#">About</a></li>
+              <li><Link to="/about">About</Link></li>
             </ul>
           </nav>
         </section>
