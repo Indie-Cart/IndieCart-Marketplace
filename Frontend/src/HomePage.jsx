@@ -95,6 +95,43 @@ function HomePage() {
         </section>
       </section>
 
+      <section className="features">
+        <section className="container">
+          <h2>Why Choose IndieCart?</h2>
+          <section className="feature-grid">
+            <article className="feature-card">
+              <span className="feature-icon">🎨</span>
+              <h3>Unique Creations</h3>
+              <p>Discover one-of-a-kind DIY projects from talented artists worldwide</p>
+            </article>
+            <article className="feature-card">
+              <span className="feature-icon">💡</span>
+              <h3>Learn & Create</h3>
+              <p>Follow detailed tutorials and create your own masterpieces</p>
+            </article>
+            <article className="feature-card">
+              <span className="feature-icon">🤝</span>
+              <h3>Support Artists</h3>
+              <p>Directly support independent creators and their craft</p>
+            </article>
+          </section>
+        </section>
+      </section>
+
+      <section className="cta-section">
+        <section className="container">
+          <h2>Ready to Start Your Creative Journey?</h2>
+          <p>Join our community of makers and share your unique creations with the world</p>
+          <button className="primary-btn">Get Started</button>
+        </section>
+      </section>
+
+      <footer className="footer">
+        <section className="container">
+          <p>&copy; 2024 IndieCart. All rights reserved.</p>
+        </section>
+      </footer>
+
       
     </main>
   );
