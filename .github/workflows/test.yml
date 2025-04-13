@@ -24,17 +24,17 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install backend dependencies
-        working-directory: ./backend
+        working-directory: ./Backend
         run: npm install
 
       - name: Run backend tests (Jest)
-        working-directory: ./backend
+        working-directory: ./Backend
         run: npm test
 
       - name: Install frontend dependencies
-        working-directory: ./frontend
+        working-directory: ./Frontend
         run: npm install
 
       - name: Run frontend tests (Vitest)
-        working-directory: ./frontend
+        working-directory: ./Frontend
         run: npm run test
