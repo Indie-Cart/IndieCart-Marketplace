@@ -1,0 +1,20 @@
+{
+  "name": "indiecart-marketplace",
+  "version": "1.0.0",
+  "description": "Marketplace for DIY projects",
+  "scripts": {
+    "start": "node Backend/server.js",
+    "dev": "concurrently \"cd Frontend && npm run dev\" \"cd Backend && npm run dev\"",
+    "build:frontend": "cd Frontend && npm install && npm run build",
+    "build:backend": "cd Backend && npm install",
+    "build": "npm run build:backend && npm run build:frontend",
+    "postinstall": "npm run build:backend",
+    "install:all": "npm install && cd Frontend && npm install && cd ../Backend && npm install"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

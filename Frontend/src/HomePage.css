@@ -1,0 +1,16 @@
+header{
+  margin: 0;
+  padding: 0;
+  background-color: #fffafc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 10vh;
+}
+
+shop-name {
+  font-family: 'Pacifico', cursive;
+  font-size: 3rem;
+  color: #ec77f0;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+}
