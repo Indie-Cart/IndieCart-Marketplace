@@ -55,4 +55,4 @@ jobs:
           app-name: 'IndieCart'
           slot-name: 'Production'
           package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_4FC9F34211F94C168A44B28468D53311 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_DEECDE51786944A4B39630387FAF1EE4 }}
