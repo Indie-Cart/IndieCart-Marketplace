@@ -1,7 +1,9 @@
 import React from 'react';
 import './HomePage.css';
+import { useAuth0 } from "@auth0/auth0-react";
 
 function HomePage() {
+  const { loginWithRedirect } = useAuth0();
   const featuredProducts = [
     {
       id: 1,
@@ -46,7 +48,7 @@ function HomePage() {
             <ul>
               <li><a href="#" className="active">Home</a></li>
               <li><a href="#">Browse Projects</a></li>
-              <li><a href="#">Become a Seller</a></li>
+              <li><a href="#" onClick={(e) => { e.preventDefault(); loginWithRedirect(); }}>Become a Seller</a></li>
               <li><a href="#">About</a></li>
             </ul>
           </nav>

@@ -9,17 +9,6 @@ function App() {
   return (
     <>
       <HomePage />
-      
-      {isAuthenticated ? (
-        <>
-          <h2>Welcome, {user.name}</h2>
-          <button onClick={() => logout({ returnTo: window.location.origin })}>
-            Log Out
-          </button>
-        </>
-      ) : (
-        <LoginButton />
-      )}
     </>
   );
 }
