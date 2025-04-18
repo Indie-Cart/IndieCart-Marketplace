@@ -138,7 +138,7 @@ function HomePage() {
 
       <footer className="footer">
         <section className="container">
-          <p>&copy; 2024 IndieCart. All rights reserved.</p>
+          <p>&copy; 2025 IndieCart. All rights reserved.</p>
         </section>
       </footer>
 
