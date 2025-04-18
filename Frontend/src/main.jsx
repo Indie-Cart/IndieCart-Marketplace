@@ -7,11 +7,13 @@ import { Auth0Provider } from '@auth0/auth0-react';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <Auth0Provider
-    domain="dev-6mvzvr3totwc6rkd.us.auth0.com"
-    clientId="u63Rgkp5TE5b2kecH0BaJL0YQDt3bUI0"
+    domain="dev-2ino8rpuh481p7q0.us.auth0.com"
+    clientId="FCOgq96heSlPlwhAf5yNYC8nfAp4TptY"
     authorizationParams={{
       redirect_uri: window.location.origin
     }}
+    cacheLocation="localstorage"
+    useRefreshTokens={true}
   >
     <App />
   </Auth0Provider>,

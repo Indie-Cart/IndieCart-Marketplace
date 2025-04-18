@@ -4,7 +4,7 @@ import './HomePage.css';
 import { useAuth0 } from "@auth0/auth0-react";
 
 function HomePage() {
-  const { loginWithRedirect } = useAuth0();
+  const { loginWithRedirect, logout, isAuthenticated, user } = useAuth0();
   const featuredProducts = [
     {
       id: 1,
@@ -49,7 +49,14 @@ function HomePage() {
             <ul>
               <li><Link to="/" className="active">Home</Link></li>
               <li><Link to="#">Browse Projects</Link></li>
-              <li><a href="#" onClick={(e) => { e.preventDefault(); loginWithRedirect(); }}>Become a Seller</a></li>
+              {isAuthenticated ? (
+                <>
+                  <li><span className="user-greeting">Welcome, {user.name}</span></li>
+                  <li><button onClick={() => logout({ returnTo: window.location.origin })} className="logout-btn">Log Out</button></li>
+                </>
+              ) : (
+                <li><button onClick={() => loginWithRedirect()} className="login-btn">Log In</button></li>
+              )}
               <li><Link to="/about">About</Link></li>
             </ul>
           </nav>
