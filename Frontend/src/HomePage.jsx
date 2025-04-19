@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import './HomePage.css';
 import { useAuth0 } from "@auth0/auth0-react";
 
+const API_URL = import.meta.env.VITE_API_URL;
 function HomePage() {
   const { loginWithRedirect, logout, isAuthenticated, user } = useAuth0();
 
@@ -10,7 +11,7 @@ function HomePage() {
     const registerBuyer = async () => {
       if (isAuthenticated && user) {
         try {
-          const response = await fetch('http://localhost:8080/api/buyers', {
+          const response = await fetch(`${API_URL}/api/buyers`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
