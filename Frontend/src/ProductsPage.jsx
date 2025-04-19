@@ -53,7 +53,7 @@ function ProductsPage() {
               </figure>
               <section className="product-info">
                 <h3>{product.title}</h3>
-                <p className="creator">by {product.seller_id}</p>
+                <p className="creator">by {product.shop_name || 'Unknown Shop'}</p>
                 <section className="product-meta">
                   <span className="price">${product.price}</span>
                   <span className="stock">Stock: {product.stock}</span>

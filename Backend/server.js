@@ -128,9 +128,10 @@ app.get('/api/products', async (req, res) => {
         const pool = await sql.connect(dbConfig);
         const result = await pool.request()
             .query(`
-                SELECT product_id, seller_id, title, description, price, stock, image
-                FROM products
-                ORDER BY product_id DESC
+                SELECT p.product_id, p.seller_id, p.title, p.description, p.price, p.stock, p.image, s.shop_name
+                FROM products p
+                LEFT JOIN seller s ON p.seller_id = s.seller_id
+                ORDER BY p.product_id DESC
             `);
 
         // Convert binary image data to base64
