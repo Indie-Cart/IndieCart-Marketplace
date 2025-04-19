@@ -1,10 +1,35 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './HomePage.css';
 import { useAuth0 } from "@auth0/auth0-react";
 
 function HomePage() {
   const { loginWithRedirect, logout, isAuthenticated, user } = useAuth0();
+
+  useEffect(() => {
+    const registerBuyer = async () => {
+      if (isAuthenticated && user) {
+        try {
+          const response = await fetch('http://localhost:8080/api/buyers', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ buyer_id: user.sub }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to register buyer');
+          }
+        } catch (error) {
+          console.error('Error registering buyer:', error);
+        }
+      }
+    };
+
+    registerBuyer();
+  }, [isAuthenticated, user]);
+
   const featuredProducts = [
     {
       id: 1,
