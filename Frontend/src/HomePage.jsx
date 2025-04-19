@@ -3,7 +3,11 @@ import { Link } from 'react-router-dom';
 import './HomePage.css';
 import { useAuth0 } from "@auth0/auth0-react";
 
-const API_URL = import.meta.env.VITE_API_URL;
+// Determine API URL based on environment
+const API_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:8080' 
+  : 'https://indiecart-dwgnhtdnh9fvashy.eastus-01.azurewebsites.net';
+
 function HomePage() {
   const { loginWithRedirect, logout, isAuthenticated, user } = useAuth0();
 
