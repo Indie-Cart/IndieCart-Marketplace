@@ -52,6 +52,7 @@ nav ul {
   display: flex;
   list-style: none;
   gap: 2rem;
+  align-items: center;
 }
 
 nav a {
@@ -63,6 +64,29 @@ nav a {
 
 nav a:hover,
 nav a.active {
+  color: var(--primary-color);
+}
+
+.user-greeting {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.login-btn,
+.logout-btn {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: color 0.3s ease;
+}
+
+.login-btn:hover,
+.logout-btn:hover {
   color: var(--primary-color);
 }
 

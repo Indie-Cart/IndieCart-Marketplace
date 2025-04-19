@@ -1,10 +1,35 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import './HomePage.css';
 import { useAuth0 } from "@auth0/auth0-react";
 
 function HomePage() {
-  const { loginWithRedirect } = useAuth0();
+  const { loginWithRedirect, logout, isAuthenticated, user } = useAuth0();
+
+  useEffect(() => {
+    const registerBuyer = async () => {
+      if (isAuthenticated && user) {
+        try {
+          const response = await fetch('http://localhost:8080/api/buyers', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ buyer_id: user.sub }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to register buyer');
+          }
+        } catch (error) {
+          console.error('Error registering buyer:', error);
+        }
+      }
+    };
+
+    registerBuyer();
+  }, [isAuthenticated, user]);
+
   const featuredProducts = [
     {
       id: 1,
@@ -49,7 +74,14 @@ function HomePage() {
             <ul>
               <li><Link to="/" className="active">Home</Link></li>
               <li><Link to="#">Browse Projects</Link></li>
-              <li><a href="#" onClick={(e) => { e.preventDefault(); loginWithRedirect(); }}>Become a Seller</a></li>
+              {isAuthenticated ? (
+                <>
+                  <li><span className="user-greeting">Welcome, {user.name}</span></li>
+                  <li><button onClick={() => logout({ returnTo: window.location.origin })} className="logout-btn">Log Out</button></li>
+                </>
+              ) : (
+                <li><button onClick={() => loginWithRedirect()} className="login-btn">Log In</button></li>
+              )}
               <li><Link to="/about">About</Link></li>
             </ul>
           </nav>
@@ -131,7 +163,7 @@ function HomePage() {
 
       <footer className="footer">
         <section className="container">
-          <p>&copy; 2024 IndieCart. All rights reserved.</p>
+          <p>&copy; 2025 IndieCart. All rights reserved.</p>
         </section>
       </footer>
 
