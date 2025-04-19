@@ -67,8 +67,8 @@ app.post('/api/buyers', async (req, res) => {
 // API endpoint to add new product
 app.post('/api/products', upload.single('image'), async (req, res) => {
     try {
-        console.log('Received request body:', req.body);
-        console.log('Received file:', req.file);
+        console.log('Adding new product - Request body:', req.body);
+        console.log('Image file:', req.file);
         
         const { seller_id, title, description, price, stock } = req.body;
         
@@ -102,16 +102,53 @@ app.post('/api/products', upload.single('image'), async (req, res) => {
             .input('image', sql.VarBinary(sql.MAX), req.file ? req.file.buffer : null)
             .query(`
                 INSERT INTO products (seller_id, title, description, price, stock, image)
+                OUTPUT INSERTED.*
                 VALUES (@seller_id, @title, @description, @price, @stock, @image)
             `);
 
-        res.status(201).json({ message: 'Product added successfully' });
+        console.log('Product added successfully:', result.recordset[0]);
+        res.status(201).json({ 
+            message: 'Product added successfully',
+            product: result.recordset[0]
+        });
     } catch (err) {
         console.error('Error adding product:', err);
         res.status(500).json({ 
             error: 'Failed to add product',
             details: err.message 
         });
+    } finally {
+        sql.close();
+    }
+});
+
+// API endpoint to get all products
+app.get('/api/products', async (req, res) => {
+    try {
+        const pool = await sql.connect(dbConfig);
+        const result = await pool.request()
+            .query(`
+                SELECT product_id, seller_id, title, description, price, stock, image
+                FROM products
+                ORDER BY product_id DESC
+            `);
+
+        // Convert binary image data to base64
+        const productsWithImages = result.recordset.map(product => {
+            if (product.image) {
+                // Convert the binary buffer to base64
+                const base64Image = Buffer.from(product.image).toString('base64');
+                // Create a data URL that can be used in an img tag
+                product.image = `data:image/jpeg;base64,${base64Image}`;
+            }
+            return product;
+        });
+
+        console.log('Retrieved products:', productsWithImages);
+        res.json(productsWithImages);
+    } catch (err) {
+        console.error('Error fetching products:', err);
+        res.status(500).json({ error: 'Failed to fetch products' });
     } finally {
         sql.close();
     }

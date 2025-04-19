@@ -4,6 +4,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import HomePage from "./HomePage";
 import AboutPage from "./AboutPage";
 import AddProduct from "./AddProduct";
+import ProductsPage from "./ProductsPage";
 import "./App.css";
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/add-product" element={<AddProduct />} />
+          <Route path="/products" element={<ProductsPage />} />
         </Routes>
       </div>
     </Router>

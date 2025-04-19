@@ -78,7 +78,7 @@ function HomePage() {
           <nav>
             <ul>
               <li><Link to="/" className="active">Home</Link></li>
-              <li><Link to="#">Browse Projects</Link></li>
+              <li><Link to="/products">Browse Products</Link></li>
               {isAuthenticated ? (
                 <>
                   <li><Link to="/add-product">Add Product</Link></li>
