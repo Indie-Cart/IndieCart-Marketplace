@@ -5,6 +5,7 @@ import HomePage from "./HomePage";
 import AboutPage from "./AboutPage";
 import AddProduct from "./AddProduct";
 import ProductsPage from "./ProductsPage";
+import ProductDetailsPage from './ProductDetailsPage';
 import "./App.css";
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/add-product" element={<AddProduct />} />
           <Route path="/products" element={<ProductsPage />} />
+          <Route path="/products/:productId" element={<ProductDetailsPage />} />
         </Routes>
       </div>
     </Router>

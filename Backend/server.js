@@ -155,6 +155,38 @@ app.get('/api/products', async (req, res) => {
     }
 });
 
+// API endpoint to get a single product by ID
+app.get('/api/products/:productId', async (req, res) => {
+    try {
+        const { productId } = req.params;
+        const pool = await sql.connect(dbConfig);
+        const result = await pool.request()
+            .input('productId', sql.Int, productId)
+            .query(`
+                SELECT p.*, s.shop_name
+                FROM products p
+                LEFT JOIN seller s ON p.seller_id = s.seller_id
+                WHERE p.product_id = @productId
+            `);
+
+        if (result.recordset.length === 0) {
+            return res.status(404).json({ error: 'Product not found' });
+        }
+
+        const product = result.recordset[0];
+        if (product.image) {
+            product.image = `data:image/jpeg;base64,${Buffer.from(product.image).toString('base64')}`;
+        }
+
+        res.json(product);
+    } catch (err) {
+        console.error('Error fetching product:', err);
+        res.status(500).json({ error: 'Failed to fetch product' });
+    } finally {
+        sql.close();
+    }
+});
+
 //test api
 app.get('/tshirt', (req, res) => {
     res.status(200).send({

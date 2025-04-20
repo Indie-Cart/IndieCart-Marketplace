@@ -48,7 +48,9 @@ function ProductsPage() {
                   <div className="no-image">No Image Available</div>
                 )}
                 <figcaption className="product-overlay">
-                  <button className="view-details-btn">View Details</button>
+                  <Link to={`/products/${product.product_id}`} className="view-details-btn">
+                    View Details
+                  </Link>
                 </figcaption>
               </figure>
               <section className="product-info">
