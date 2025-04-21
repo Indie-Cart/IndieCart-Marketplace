@@ -78,9 +78,10 @@ function HomePage() {
           <nav>
             <ul>
               <li><Link to="/" className="active">Home</Link></li>
-              <li><Link to="#">Browse Projects</Link></li>
+              <li><Link to="/products">Browse Products</Link></li>
               {isAuthenticated ? (
                 <>
+                  <li><Link to="/add-product">Add Product</Link></li>
                   <li><span className="user-greeting">Welcome, {user.name}</span></li>
                   <li><button onClick={() => logout({ returnTo: window.location.origin })} className="logout-btn">Log Out</button></li>
                 </>
