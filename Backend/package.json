@@ -1,15 +1,47 @@
 {
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "express": "^5.1.0",
-    "mssql": "^11.0.1",
+    "express": "^4.18.2",
+    "mssql": "^9.1.1",
     "multer": "^1.4.5-lts.1"
   },
   "devDependencies": {
-    "@babel/preset-env": "^7.26.9",
-    "babel-jest": "^29.7.0",
-    "jest": "^29.7.0"
+    "@babel/core": "^7.24.0",
+    "@babel/preset-env": "^7.24.0",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.4"
   },
-  "scripts": {
-    "test": "jest"
+  "jest": {
+    "testEnvironment": "node",
+    "coverageDirectory": "./coverage",
+    "collectCoverage": true,
+    "collectCoverageFrom": [
+      "**/*.js",
+      "!**/node_modules/**",
+      "!**/coverage/**",
+      "!**/babel.config.js",
+      "!jest.config.js"
+    ],
+    "coverageReporters": ["text", "lcov"],
+    "coverageThreshold": {
+      "global": {
+        "statements": 25,
+        "branches": 25,
+        "functions": 25,
+        "lines": 25
+      }
+    }
   }
 }

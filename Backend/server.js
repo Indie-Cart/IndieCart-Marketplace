@@ -21,21 +21,25 @@ const dbConfig = {
       encrypt: true,
       enableArithAbort: true
     }
-  };
+};
   
-  async function testDbConnection() {
+async function testDbConnection() {
     try {
-      const pool = await sql.connect(dbConfig);
-      const result = await pool.request().query('SELECT 1 AS result');
-      console.log("✅ DB Connected! Result:", result.recordset);
-      sql.close();
+        const pool = await sql.connect(dbConfig);
+        const result = await pool.request().query('SELECT 1 AS result');
+        console.log("✅ DB Connected! Result:", result.recordset);
+        sql.close();
     } catch (err) {
-      console.error("❌ DB Connection failed:", err.message);
-      sql.close();
+        console.error("❌ DB Connection failed:", err.message);
+        sql.close();
     }
-  }
-  testDbConnection();
-  
+}
+
+// Only test DB connection when running the server directly
+if (require.main === module) {
+    testDbConnection();
+}
+
 // API endpoint to add new buyer
 app.post('/api/buyers', async (req, res) => {
     try {
@@ -48,19 +52,12 @@ app.post('/api/buyers', async (req, res) => {
         const pool = await sql.connect(dbConfig);
         const result = await pool.request()
             .input('buyer_id', sql.VarChar, buyer_id)
-            .query(`
-                IF NOT EXISTS (SELECT 1 FROM buyer WHERE buyer_id = @buyer_id)
-                BEGIN
-                    INSERT INTO buyer (buyer_id) VALUES (@buyer_id)
-                END
-            `);
-
-        res.status(201).json({ message: 'Buyer added successfully' });
-    } catch (err) {
-        console.error('Error adding buyer:', err);
+            .query('INSERT INTO Buyers (buyer_id) VALUES (@buyer_id)');
+        
+        res.status(200).json({ message: 'Buyer added successfully' });
+    } catch (error) {
+        console.error('Error adding buyer:', error);
         res.status(500).json({ error: 'Failed to add buyer' });
-    } finally {
-        sql.close();
     }
 });
 
@@ -201,6 +198,11 @@ app.get('/*splat', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/dist/index.html'))
 });
 
-app.listen(PORT, () => {
-    console.log(`It's alive on http://localhost:${PORT}`)
-});
+// Only start the server when running the file directly
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`It's alive on http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;
