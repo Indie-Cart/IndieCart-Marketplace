@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import './ProductDetailsPage.css';
 
 // Determine API URL based on environment
@@ -49,7 +49,15 @@ function ProductDetailsPage() {
           </figure>
           <section className="product-info">
             <h1>{product.title}</h1>
-            <p className="creator">by {product.shop_name || 'Unknown Shop'}</p>
+            <p className="creator">
+              by{' '}
+              <Link 
+                to={`/seller/${encodeURIComponent(product.shop_name || 'Unknown Shop')}`}
+                className="seller-link"
+              >
+                {product.shop_name || 'Unknown Shop'}
+              </Link>
+            </p>
             <p className="description">{product.description}</p>
             <section className="product-meta">
               <span className="price">${product.price}</span>
