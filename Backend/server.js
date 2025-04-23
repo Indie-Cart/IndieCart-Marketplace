@@ -184,6 +184,43 @@ app.get('/api/products/:productId', async (req, res) => {
     }
 });
 
+// API endpoint to get products by seller name
+app.get('/api/products/seller/:shopName', async (req, res) => {
+    try {
+        const { shopName } = req.params;
+        const pool = await sql.connect(dbConfig);
+        const result = await pool.request()
+            .input('shopName', sql.VarChar, shopName)
+            .query(`
+                SELECT p.product_id, p.seller_id, p.title, p.description, p.price, p.stock, p.image, s.shop_name
+                FROM products p
+                LEFT JOIN seller s ON p.seller_id = s.seller_id
+                WHERE s.shop_name = @shopName
+                ORDER BY p.product_id DESC
+            `);
+
+        if (result.recordset.length === 0) {
+            return res.status(404).json({ error: 'No products found for this seller' });
+        }
+
+        // Convert binary image data to base64
+        const productsWithImages = result.recordset.map(product => {
+            if (product.image) {
+                const base64Image = Buffer.from(product.image).toString('base64');
+                product.image = `data:image/jpeg;base64,${base64Image}`;
+            }
+            return product;
+        });
+
+        res.json(productsWithImages);
+    } catch (err) {
+        console.error('Error fetching seller products:', err);
+        res.status(500).json({ error: 'Failed to fetch seller products' });
+    } finally {
+        sql.close();
+    }
+});
+
 //test api
 app.get('/tshirt', (req, res) => {
     res.status(200).send({
