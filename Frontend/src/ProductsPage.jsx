@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom';
 import './ProductsPage.css';
 
 // Determine API URL based on environment
-const API_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:8080' 
+const API_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:8080'
   : 'https://indiecart-dwgnhtdnh9fvashy.eastus-01.azurewebsites.net';
 
 function ProductsPage() {
@@ -82,7 +82,7 @@ function ProductsPage() {
                 <h3>{product.title}</h3>
                 <p className="creator">
                   by{' '}
-                  <Link 
+                  <Link
                     to={`/seller/${encodeURIComponent(product.shop_name || 'Unknown Shop')}`}
                     className="seller-link"
                   >
@@ -90,7 +90,7 @@ function ProductsPage() {
                   </Link>
                 </p>
                 <section className="product-meta">
-                  <span className="price">${product.price}</span>
+                  <span className="price">R{product.price}</span>
                   <span className="stock">Stock: {product.stock}</span>
                 </section>
               </section>

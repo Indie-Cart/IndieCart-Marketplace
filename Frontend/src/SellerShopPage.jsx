@@ -3,8 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import './ProductsPage.css'; // Reusing the same styles
 
 // Determine API URL based on environment
-const API_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:8080' 
+const API_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:8080'
   : 'https://indiecart-dwgnhtdnh9fvashy.eastus-01.azurewebsites.net';
 
 function SellerShopPage() {
@@ -57,7 +57,7 @@ function SellerShopPage() {
               <section className="product-info">
                 <h3>{product.title}</h3>
                 <section className="product-meta">
-                  <span className="price">${product.price}</span>
+                  <span className="price">R{product.price}</span>
                   <span className="stock">Stock: {product.stock}</span>
                 </section>
               </section>

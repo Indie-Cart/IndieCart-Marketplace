@@ -4,8 +4,8 @@ import './HomePage.css';
 import { useAuth0 } from "@auth0/auth0-react";
 
 // Determine API URL based on environment
-const API_URL = window.location.hostname === 'localhost' 
-  ? 'http://localhost:8080' 
+const API_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:8080'
   : 'https://indiecart-dwgnhtdnh9fvashy.eastus-01.azurewebsites.net';
 
 function HomePage() {
@@ -40,7 +40,7 @@ function HomePage() {
       id: 1,
       title: "Handmade Ceramic Mugs",
       creator: "ClayCraft Studio",
-      price: "$45",
+      price: "R45",
       image: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
       rating: 4.8
     },
@@ -48,7 +48,7 @@ function HomePage() {
       id: 2,
       title: "Macrame Wall Hanging",
       creator: "Knotty Creations",
-      price: "$65",
+      price: "R65",
       image: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
       rating: 4.9
     },
@@ -56,7 +56,7 @@ function HomePage() {
       id: 3,
       title: "Wooden Jewelry Box",
       creator: "TimberCraft",
-      price: "$85",
+      price: "R85",
       image: "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
       rating: 4.7
     },
@@ -64,7 +64,7 @@ function HomePage() {
       id: 4,
       title: "Hand-painted Canvas",
       creator: "Artistic Expressions",
-      price: "$120",
+      price: "R120",
       image: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
       rating: 5.0
     }
@@ -173,7 +173,7 @@ function HomePage() {
         </section>
       </footer>
 
-      
+
     </main>
   );
 }
