@@ -1,12 +1,6 @@
-/* Global Styles */
-:root {
-  --primary-color: #9ddf24;
-  --secondary-color: #d7ec18;
-  --text-color: #2d3436;
-  --light-bg: #f9f9f9;
-  --white: #ffffff;
-}
+@import './colors.css';
 
+/* Global Styles */
 .product-details-page {
   padding: 5rem 0;
   background-color: var(--light-bg);
