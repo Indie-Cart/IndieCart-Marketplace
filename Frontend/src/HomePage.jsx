@@ -49,7 +49,7 @@ function HomePage() {
       title: "Macrame Wall Hanging",
       creator: "Knotty Creations",
       price: "R65",
-      image: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+      image: "https://i.etsystatic.com/12804288/r/il/065b6f/2512936856/il_fullxfull.2512936856_i1a0.jpg",
       rating: 4.9
     },
     {
@@ -65,7 +65,7 @@ function HomePage() {
       title: "Hand-painted Canvas",
       creator: "Artistic Expressions",
       price: "R120",
-      image: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+      image: "https://th.bing.com/th/id/R.df19ece026dccbb7a2ef484e2a62796c?rik=3dWmAZcWi66mEQ&riu=http%3a%2f%2fwww.book530.com%2fpaintingpic%2f20%2fHand-Painted-Oil-Paintings-Canvas-Wall.jpg&ehk=blzB%2f58q5Eg51qQYCgUdjb2%2bO%2fhxeibthur6Bfqa93M%3d&risl=&pid=ImgRaw&r=0",
       rating: 5.0
     }
   ];
