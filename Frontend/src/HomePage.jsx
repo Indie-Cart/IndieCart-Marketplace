@@ -38,10 +38,10 @@ function HomePage() {
   const featuredProducts = [
     {
       id: 1,
-      title: "Assorted T-shirts",
+      title: "Clay Mug",
       creator: "ClayCraft Studio",
       price: "R45",
-      image: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+      image: "https://i.pinimg.com/736x/88/76/90/88769088ec2cce51220254c412f4b0e2.jpg",
       rating: 4.8
     },
     {
