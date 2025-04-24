@@ -38,7 +38,7 @@ function HomePage() {
   const featuredProducts = [
     {
       id: 1,
-      title: "Handmade Ceramic Mugs",
+      title: "Assorted T-shirts",
       creator: "ClayCraft Studio",
       price: "R45",
       image: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
@@ -54,7 +54,7 @@ function HomePage() {
     },
     {
       id: 3,
-      title: "Wooden Jewelry Box",
+      title: "Everyday Water Bottle",
       creator: "TimberCraft",
       price: "R85",
       image: "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
@@ -98,9 +98,9 @@ function HomePage() {
         <section className="container">
           <article className="hero-content">
             <h1>Discover Unique DIY Projects</h1>
-            <p>Join our community of creative makers and find inspiration for your next project</p>
+            <p>Crafted with heart. Curated for you.</p>
             <section className="cta-buttons">
-              <button className="primary-btn">Browse Projects</button>
+              <button className="primary-btn">Browse Products</button>
               <button className="secondary-btn">Start Selling</button>
             </section>
           </article>
