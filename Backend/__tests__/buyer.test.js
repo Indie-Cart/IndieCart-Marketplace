@@ -1,7 +1,6 @@
 const request = require('supertest');
 const sql = require('mssql');
 
-// Mock the sql module
 jest.mock('mssql', () => {
     const mockRequest = {
         input: jest.fn().mockReturnThis(),
