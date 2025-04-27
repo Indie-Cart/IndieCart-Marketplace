@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './HomePage.css';
 import { useAuth0 } from "@auth0/auth0-react";
 
@@ -10,6 +10,7 @@ const API_URL = window.location.hostname === 'localhost'
 
 function HomePage() {
   const { loginWithRedirect, logout, isAuthenticated, user } = useAuth0();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const registerBuyer = async () => {
@@ -100,8 +101,8 @@ function HomePage() {
             <h1>Discover Unique DIY Projects</h1>
             <p>Crafted with heart. Curated for you.</p>
             <section className="cta-buttons">
-              <button className="primary-btn">Browse Products</button>
-              <button className="secondary-btn">Start Selling</button>
+              <button onClick={() => navigate('/products')} className="primary-btn">Browse Products</button>
+              <button onClick={() => loginWithRedirect()} className="secondary-btn">Start Selling</button>
             </section>
           </article>
         </section>
@@ -116,7 +117,7 @@ function HomePage() {
                 <figure className="product-image">
                   <img src={product.image} alt={product.title} />
                   <figcaption className="product-overlay">
-                    <button className="view-details-btn">View Details</button>
+                    <button onClick={() => navigate(`/products/${product.id}`)} className="view-details-btn">View Details</button>
                   </figcaption>
                 </figure>
                 <section className="product-info">
@@ -131,7 +132,7 @@ function HomePage() {
             ))}
           </section>
           <section className="view-all-container">
-            <button className="view-all-btn">View All Projects</button>
+            <button onClick={() => navigate('/products')} className="view-all-btn">View All Projects</button>
           </section>
         </section>
       </section>
@@ -163,7 +164,7 @@ function HomePage() {
         <section className="container">
           <h2>Ready to Start Your Creative Journey?</h2>
           <p>Join our community of makers and share your unique creations with the world</p>
-          <button className="primary-btn">Get Started</button>
+          <button onClick={() => loginWithRedirect()} className="primary-btn">Get Started</button>
         </section>
       </section>
 
@@ -172,8 +173,6 @@ function HomePage() {
           <p>&copy; 2025 IndieCart. All rights reserved.</p>
         </section>
       </footer>
-
-
     </main>
   );
 }
