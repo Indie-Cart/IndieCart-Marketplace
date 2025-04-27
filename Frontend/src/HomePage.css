@@ -88,8 +88,7 @@ nav a.active {
 .hero {
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
   color: var(--white);
-  padding: 8rem 0;
-  margin-top: 4rem;
+  padding: 6rem 0;
   text-align: center;
 }
 
@@ -359,7 +358,7 @@ nav a.active {
   }
 
   .hero {
-    padding: 6rem 0;
+    padding: 4rem 0;
   }
 
   .hero h1 {

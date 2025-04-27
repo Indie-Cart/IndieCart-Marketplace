@@ -73,28 +73,6 @@ function HomePage() {
 
   return (
     <main className="home-page">
-      <header className="header">
-        <section className="container">
-          <h1 className="shop-name">IndieCart</h1>
-          <nav>
-            <ul>
-              <li><Link to="/" className="active">Home</Link></li>
-              <li><Link to="/products">Browse Products</Link></li>
-              {isAuthenticated ? (
-                <>
-                  <li><Link to="/add-product">Add Product</Link></li>
-                  <li><span className="user-greeting">Welcome, {user.name}</span></li>
-                  <li><button onClick={() => logout({ returnTo: window.location.origin })} className="logout-btn">Log Out</button></li>
-                </>
-              ) : (
-                <li><button onClick={() => loginWithRedirect()} className="login-btn">Log In</button></li>
-              )}
-              <li><Link to="/about">About</Link></li>
-            </ul>
-          </nav>
-        </section>
-      </header>
-
       <section className="hero">
         <section className="container">
           <article className="hero-content">
@@ -167,12 +145,6 @@ function HomePage() {
           <button onClick={() => loginWithRedirect()} className="primary-btn">Get Started</button>
         </section>
       </section>
-
-      <footer className="footer">
-        <section className="container">
-          <p>&copy; 2025 IndieCart. All rights reserved.</p>
-        </section>
-      </footer>
     </main>
   );
 }

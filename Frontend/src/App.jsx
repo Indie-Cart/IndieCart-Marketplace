@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
+import Layout from "./components/Layout";
 import HomePage from "./HomePage";
 import AboutPage from "./AboutPage";
 import AddProduct from "./AddProduct";
@@ -14,7 +15,7 @@ function App() {
 
   return (
     <Router>
-      <div className="app">
+      <Layout>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />
@@ -23,7 +24,7 @@ function App() {
           <Route path="/products/:productId" element={<ProductDetailsPage />} />
           <Route path="/seller/:shopName" element={<SellerShopPage />} />
         </Routes>
-      </div>
+      </Layout>
     </Router>
   );
 }
