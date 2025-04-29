@@ -1,6 +1,16 @@
 const request = require('supertest');
 const sql = require('mssql');
 
+// Mock console.error to suppress error messages in tests
+const originalConsoleError = console.error;
+beforeAll(() => {
+    console.error = jest.fn();
+});
+
+afterAll(() => {
+    console.error = originalConsoleError;
+});
+
 jest.mock('mssql', () => {
     const mockRequest = {
         input: jest.fn().mockReturnThis(),
@@ -52,8 +62,8 @@ describe('Buyer API Endpoints', () => {
             expect(sql.connect).toHaveBeenCalledWith({
                 user: 'sqlserveradmin',
                 password: 'Indiecart123',
-                server: 'indiecartserver2.database.windows.net',
-                database: 'IndieCartdb2',
+                server: 'indiecartserverus.database.windows.net',
+                database: 'IndieCartdb2_Copy',
                 options: {
                     encrypt: true,
                     enableArithAbort: true
