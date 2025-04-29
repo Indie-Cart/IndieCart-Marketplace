@@ -15,8 +15,8 @@ app.use(express.urlencoded({ extended: true }));
 const dbConfig = {
     user: 'sqlserveradmin',
     password: 'Indiecart123',
-    server: 'indiecartserver2.database.windows.net',
-    database: 'IndieCartdb2',
+    server: 'indiecartserverus.database.windows.net',
+    database: 'IndieCartdb2_Copy',
     options: {
       encrypt: true,
       enableArithAbort: true
