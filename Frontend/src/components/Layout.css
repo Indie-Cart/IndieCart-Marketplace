@@ -40,11 +40,31 @@ nav a {
   color: var(--text-color);
   font-weight: 500;
   transition: color 0.3s ease;
+  position: relative;
 }
 
 nav a:hover,
 nav a.active {
   color: var(--primary-color);
+}
+
+.cart-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cart-count {
+  background-color: var(--primary-color);
+  color: var(--white);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: bold;
 }
 
 .user-greeting {
@@ -93,4 +113,4 @@ nav a.active {
     text-align: center;
     gap: 1rem;
   }
-} 
+}

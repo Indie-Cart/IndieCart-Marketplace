@@ -46,57 +46,66 @@ function ProductsPage() {
 
   return (
     <main className="products-page">
-      <section className="container">
-        <h1>All Products</h1>
-        <div className="search-container">
-          <input
-            type="text"
-            placeholder="Search products..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
-          />
-          <div className="search-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-          </div>
+      <section className="products-hero">
+        <div className="container">
+          <h1>All Products</h1>
+          <p className="hero-subtitle">Discover unique handmade creations from talented artisans</p>
         </div>
-        <section className="product-grid">
-          {filteredProducts.map(product => (
-            <article key={product.product_id} className="product-card">
-              <figure className="product-image">
-                {product.image ? (
-                  <img src={product.image} alt={product.title} />
-                ) : (
-                  <div className="no-image">No Image Available</div>
-                )}
-                <figcaption className="product-overlay">
-                  <Link to={`/products/${product.product_id}`} className="view-details-btn">
-                    View Details
-                  </Link>
-                </figcaption>
-              </figure>
-              <section className="product-info">
-                <h3>{product.title}</h3>
-                <p className="creator">
-                  by{' '}
-                  <Link
-                    to={`/seller/${encodeURIComponent(product.shop_name || 'Unknown Shop')}`}
-                    className="seller-link"
-                  >
-                    {product.shop_name || 'Unknown Shop'}
-                  </Link>
-                </p>
-                <section className="product-meta">
-                  <span className="price">R{product.price}</span>
-                  <span className="stock">Stock: {product.stock}</span>
+      </section>
+
+      <section className="products-content">
+        <div className="container">
+          <div className="search-container">
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+            <div className="search-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </div>
+          </div>
+
+          <section className="product-grid">
+            {filteredProducts.map(product => (
+              <article key={product.product_id} className="product-card">
+                <figure className="product-image">
+                  {product.image ? (
+                    <img src={product.image} alt={product.title} />
+                  ) : (
+                    <div className="no-image">No Image Available</div>
+                  )}
+                  <figcaption className="product-overlay">
+                    <Link to={`/products/${product.product_id}`} className="view-details-btn">
+                      View Details
+                    </Link>
+                  </figcaption>
+                </figure>
+                <section className="product-info">
+                  <h3>{product.title}</h3>
+                  <p className="creator">
+                    by{' '}
+                    <Link
+                      to={`/seller/${encodeURIComponent(product.shop_name || 'Unknown Shop')}`}
+                      className="seller-link"
+                    >
+                      {product.shop_name || 'Unknown Shop'}
+                    </Link>
+                  </p>
+                  <section className="product-meta">
+                    <span className="price">R{product.price}</span>
+                    <span className="stock">Stock: {product.stock}</span>
+                  </section>
                 </section>
-              </section>
-            </article>
-          ))}
-        </section>
+              </article>
+            ))}
+          </section>
+        </div>
       </section>
     </main>
   );

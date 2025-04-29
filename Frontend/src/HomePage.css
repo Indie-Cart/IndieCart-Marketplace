@@ -336,12 +336,12 @@ nav a.active {
   border-radius: 50px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.3s ease, background-color 0.3s ease;
+  transition: transform 0.3s ease;
 }
 
 .view-all-btn:hover {
   transform: translateY(-2px);
-  background-color: var(--secondary-color);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Responsive Design */

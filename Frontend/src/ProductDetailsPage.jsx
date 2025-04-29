@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import './ProductDetailsPage.css';
 
 // Determine API URL based on environment
@@ -9,9 +9,11 @@ const API_URL = window.location.hostname === 'localhost'
 
 function ProductDetailsPage() {
   const { productId } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -31,6 +33,36 @@ function ProductDetailsPage() {
 
     fetchProduct();
   }, [productId]);
+
+  const handleAddToCart = () => {
+    if (!product) return;
+
+    // Get existing cart from localStorage
+    const existingCart = JSON.parse(localStorage.getItem('cart') || '[]');
+
+    // Check if product already exists in cart
+    const existingItemIndex = existingCart.findIndex(item => item.id === product.id);
+
+    if (existingItemIndex >= 0) {
+      // Update quantity if product exists
+      existingCart[existingItemIndex].quantity += quantity;
+    } else {
+      // Add new item to cart
+      existingCart.push({
+        id: product.id,
+        name: product.title,
+        price: product.price,
+        image: product.image,
+        quantity: quantity
+      });
+    }
+
+    // Save updated cart to localStorage
+    localStorage.setItem('cart', JSON.stringify(existingCart));
+
+    // Navigate to cart page
+    navigate('/cart');
+  };
 
   if (loading) return <div className="loading">Loading product details...</div>;
   if (error) return <div className="error">Error: {error}</div>;
@@ -63,7 +95,23 @@ function ProductDetailsPage() {
               <span className="price">R{product.price}</span>
               <span className="stock">Stock: {product.stock}</span>
             </section>
-            <button className="add-to-cart-btn">Add to Cart</button>
+            <div className="quantity-selector">
+              <label htmlFor="quantity">Quantity:</label>
+              <input
+                type="number"
+                id="quantity"
+                min="1"
+                max={product.stock}
+                value={quantity}
+                onChange={(e) => setQuantity(Math.max(1, Math.min(product.stock, parseInt(e.target.value) || 1)))}
+              />
+            </div>
+            <button
+              className="add-to-cart-btn"
+              onClick={handleAddToCart}
+            >
+              Add to Cart
+            </button>
           </section>
         </article>
       </section>
