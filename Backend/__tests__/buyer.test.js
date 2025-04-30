@@ -70,7 +70,7 @@ describe('Buyer API Endpoints', () => {
                 }
             });
             expect(mockRequest.input).toHaveBeenCalledWith('buyer_id', sql.VarChar, mockBuyerId);
-            expect(mockRequest.query).toHaveBeenCalledWith('INSERT INTO Buyers (buyer_id) VALUES (@buyer_id)');
+            expect(mockRequest.query).toHaveBeenCalledWith('INSERT INTO buyer (buyer_id) VALUES (@buyer_id)');
         });
 
         it('should handle database errors', async () => {
