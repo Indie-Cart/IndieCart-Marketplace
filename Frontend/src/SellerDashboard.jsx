@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth0 } from "@auth0/auth0-react";
 import './SellerDashboard.css';
 
@@ -59,7 +59,7 @@ function SellerDashboard() {
   }
 
   return (
-    <div className="seller-dashboard">
+    <main className="seller-dashboard">
       <div className="container">
         <header className="dashboard-header">
           <h1>Seller Dashboard</h1>
@@ -75,32 +75,37 @@ function SellerDashboard() {
           </button>
         </section>
 
-        <section className="products-grid">
+        <section className="product-grid">
           {products.length === 0 ? (
             <p className="no-products">You haven't added any products yet.</p>
           ) : (
             products.map(product => (
-              <div key={product.product_id} className="product-card">
-                {product.image && (
-                  <img src={product.image} alt={product.title} className="product-image" />
-                )}
-                <div className="product-info">
+              <article key={product.product_id} className="product-card">
+                <figure className="product-image">
+                  {product.image ? (
+                    <img src={product.image} alt={product.title} />
+                  ) : (
+                    <div className="no-image">No Image Available</div>
+                  )}
+                  <figcaption className="product-overlay">
+                    <Link to={`/products/${product.product_id}`} className="view-details-btn">
+                      View Details
+                    </Link>
+                  </figcaption>
+                </figure>
+                <section className="product-info">
                   <h3>{product.title}</h3>
-                  <p className="price">R{product.price}</p>
-                  <p className="stock">Stock: {product.stock}</p>
-                  <button 
-                    onClick={() => navigate(`/products/${product.product_id}`)}
-                    className="view-btn"
-                  >
-                    View Details
-                  </button>
-                </div>
-              </div>
+                  <section className="product-meta">
+                    <span className="price">R{product.price}</span>
+                    <span className="stock">Stock: {product.stock}</span>
+                  </section>
+                </section>
+              </article>
             ))
           )}
         </section>
       </div>
-    </div>
+    </main>
   );
 }
 
