@@ -18,7 +18,7 @@ function Layout({ children }) {
               <li><Link to="/products">Browse Products</Link></li>
               {isAuthenticated ? (
                 <>
-                  <li><Link to="/add-product">Add Product</Link></li>
+                  <li><Link to="/seller-dashboard">Seller Dashboard</Link></li>
                   <li><span className="user-greeting">Welcome, {user.name}</span></li>
                   <li><button onClick={() => logout({ returnTo: window.location.origin })} className="logout-btn">Log Out</button></li>
                 </>

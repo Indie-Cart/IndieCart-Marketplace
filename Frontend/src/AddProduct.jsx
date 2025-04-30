@@ -1,15 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth0 } from "@auth0/auth0-react";
+import { useNavigate } from 'react-router-dom';
 import './AddProduct.css';
 
+const API_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:8080'
+  : 'https://indiecart-dwgnhtdnh9fvashy.eastus-01.azurewebsites.net';
+
 const AddProduct = () => {
+    const { isAuthenticated, user } = useAuth0();
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
-        seller_id: '',
         title: '',
         description: '',
         price: '',
         stock: '',
         image: null
     });
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (!isAuthenticated) {
+            navigate('/');
+        }
+    }, [isAuthenticated, navigate]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -28,9 +42,15 @@ const AddProduct = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
         
+        if (!isAuthenticated || !user) {
+            setError('Please log in to add products');
+            return;
+        }
+
         const formDataToSend = new FormData();
-        formDataToSend.append('seller_id', formData.seller_id);
+        formDataToSend.append('seller_id', user.sub);
         formDataToSend.append('title', formData.title);
         formDataToSend.append('description', formData.description);
         formDataToSend.append('price', formData.price);
@@ -41,7 +61,7 @@ const AddProduct = () => {
         }
 
         try {
-            const response = await fetch('/api/products', {
+            const response = await fetch(`${API_URL}/api/products`, {
                 method: 'POST',
                 body: formDataToSend
             });
@@ -51,38 +71,31 @@ const AddProduct = () => {
             if (response.ok) {
                 alert('Product added successfully!');
                 setFormData({
-                    seller_id: '',
                     title: '',
                     description: '',
                     price: '',
                     stock: '',
                     image: null
                 });
+                navigate('/seller-dashboard');
             } else {
-                throw new Error(data.message || data.error || 'Failed to add product');
+                throw new Error(data.error || 'Failed to add product');
             }
         } catch (error) {
             console.error('Error:', error);
-            alert(error.message);
+            setError(error.message);
         }
     };
+
+    if (!isAuthenticated) {
+        return <div className="add-product-container">Please log in to add products</div>;
+    }
 
     return (
         <div className="add-product-container">
             <h2>Add New Product</h2>
+            {error && <div className="error-message">{error}</div>}
             <form onSubmit={handleSubmit} className="add-product-form">
-                <div className="form-group">
-                    <label htmlFor="seller_id">Seller ID:</label>
-                    <input
-                        type="text"
-                        id="seller_id"
-                        name="seller_id"
-                        value={formData.seller_id}
-                        onChange={handleChange}
-                        required
-                    />
-                </div>
-
                 <div className="form-group">
                     <label htmlFor="title">Product Title:</label>
                     <input

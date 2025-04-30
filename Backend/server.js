@@ -255,6 +255,57 @@ app.post('/api/sellers', async (req, res) => {
     }
 });
 
+// API endpoint to check if user is a seller and get their products
+app.get('/api/seller/check/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const pool = await sql.connect(dbConfig);
+        
+        // Check if user is a seller
+        const sellerCheck = await pool.request()
+            .input('seller_id', sql.VarChar, userId)
+            .query(`
+                SELECT s.seller_id, s.shop_name, 
+                       (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.seller_id) as product_count
+                FROM seller s
+                WHERE s.seller_id = @seller_id
+            `);
+
+        if (sellerCheck.recordset.length === 0) {
+            return res.status(404).json({ isSeller: false });
+        }
+
+        // Get seller's products
+        const productsResult = await pool.request()
+            .input('seller_id', sql.VarChar, userId)
+            .query(`
+                SELECT p.product_id, p.title, p.description, p.price, p.stock, p.image
+                FROM products p
+                WHERE p.seller_id = @seller_id
+                ORDER BY p.product_id DESC
+            `);
+
+        // Convert binary image data to base64
+        const productsWithImages = productsResult.recordset.map(product => {
+            if (product.image) {
+                product.image = `data:image/jpeg;base64,${Buffer.from(product.image).toString('base64')}`;
+            }
+            return product;
+        });
+
+        res.json({
+            isSeller: true,
+            sellerInfo: sellerCheck.recordset[0],
+            products: productsWithImages
+        });
+    } catch (error) {
+        console.error('Error checking seller status:', error);
+        res.status(500).json({ error: 'Failed to check seller status' });
+    } finally {
+        sql.close();
+    }
+});
+
 //test api
 app.get('/tshirt', (req, res) => {
     res.status(200).send({
