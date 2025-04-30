@@ -40,7 +40,7 @@ jobs:
     needs: build
     environment:
       name: Production
-      url: https://indiecart.azurewebsites.net # Replace with your actual deployed app URL
+      url: https://indiecart.azurewebsites.net
 
     steps:
       - name: Download artifact from build job
@@ -59,3 +59,6 @@ jobs:
           slot-name: 'Production'
           package: .
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_9AC8D592E3A14E4E93493EBD44A5D7E1 }}
+          clean: true
+          retry-on-error: true
+          start-deployment: true
