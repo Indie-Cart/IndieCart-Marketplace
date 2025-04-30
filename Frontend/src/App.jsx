@@ -8,6 +8,7 @@ import AddProduct from "./AddProduct";
 import ProductsPage from "./ProductsPage";
 import ProductDetailsPage from './ProductDetailsPage';
 import SellerShopPage from './SellerShopPage';
+import ApplySellerPage from './ApplySellerPage';
 import "./App.css";
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/products/:productId" element={<ProductDetailsPage />} />
           <Route path="/seller/:shopName" element={<SellerShopPage />} />
+          <Route path="/apply-seller" element={<ApplySellerPage />} />
         </Routes>
       </Layout>
     </Router>

@@ -52,7 +52,7 @@ app.post('/api/buyers', async (req, res) => {
         const pool = await sql.connect(dbConfig);
         const result = await pool.request()
             .input('buyer_id', sql.VarChar, buyer_id)
-            .query('INSERT INTO Buyers (buyer_id) VALUES (@buyer_id)');
+            .query('INSERT INTO buyer (buyer_id) VALUES (@buyer_id)');
         
         res.status(200).json({ message: 'Buyer added successfully' });
     } catch (error) {
@@ -216,6 +216,40 @@ app.get('/api/products/seller/:shopName', async (req, res) => {
     } catch (err) {
         console.error('Error fetching seller products:', err);
         res.status(500).json({ error: 'Failed to fetch seller products' });
+    } finally {
+        sql.close();
+    }
+});
+
+// API endpoint to add new seller
+app.post('/api/sellers', async (req, res) => {
+    try {
+        const { seller_id, shop_name } = req.body;
+        
+        if (!seller_id || !shop_name) {
+            return res.status(400).json({ error: 'Seller ID and shop name are required' });
+        }
+
+        const pool = await sql.connect(dbConfig);
+        
+        // First check if seller already exists
+        const sellerCheck = await pool.request()
+            .input('seller_id', sql.VarChar, seller_id)
+            .query('SELECT 1 FROM seller WHERE seller_id = @seller_id');
+
+        if (sellerCheck.recordset.length > 0) {
+            return res.status(400).json({ error: 'You are already registered as a seller' });
+        }
+
+        const result = await pool.request()
+            .input('seller_id', sql.VarChar, seller_id)
+            .input('shop_name', sql.VarChar, shop_name)
+            .query('INSERT INTO seller (seller_id, shop_name) VALUES (@seller_id, @shop_name)');
+        
+        res.status(201).json({ message: 'Successfully registered as a seller' });
+    } catch (error) {
+        console.error('Error adding seller:', error);
+        res.status(500).json({ error: 'Failed to register as seller' });
     } finally {
         sql.close();
     }

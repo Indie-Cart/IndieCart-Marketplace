@@ -80,7 +80,7 @@ function HomePage() {
             <p>Crafted with heart. Curated for you.</p>
             <section className="cta-buttons">
               <button onClick={() => navigate('/products')} className="primary-btn">Browse Products</button>
-              <button onClick={() => loginWithRedirect()} className="secondary-btn">Start Selling</button>
+              <button onClick={() => navigate('/apply-seller')} className="secondary-btn">Start Selling</button>
             </section>
           </article>
         </section>
