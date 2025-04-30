@@ -1,5 +1,5 @@
 const request = require('supertest');
-const sql = require('mssql');
+const { Pool } = require('pg');
 
 // Mock console.error to suppress error messages in tests
 const originalConsoleError = console.error;
@@ -11,19 +11,16 @@ afterAll(() => {
     console.error = originalConsoleError;
 });
 
-jest.mock('mssql', () => {
-    const mockRequest = {
-        input: jest.fn().mockReturnThis(),
-        query: jest.fn().mockResolvedValue({ recordset: [] })
-    };
+// Mock the pg module
+jest.mock('pg', () => {
     const mockPool = {
-        request: jest.fn().mockReturnValue(mockRequest)
+        connect: jest.fn().mockResolvedValue({
+            query: jest.fn().mockResolvedValue({ rows: [] }),
+            release: jest.fn()
+        })
     };
     return {
-        connect: jest.fn().mockResolvedValue(mockPool),
-        close: jest.fn(),
-        VarChar: jest.fn(),
-        request: jest.fn().mockReturnValue(mockRequest)
+        Pool: jest.fn(() => mockPool)
     };
 });
 
@@ -47,11 +44,14 @@ describe('Buyer API Endpoints', () => {
 
         it('should successfully create a new buyer', async () => {
             const mockBuyerId = 'test-buyer-123';
-            const mockResult = { recordset: [{ buyer_id: mockBuyerId }] };
+            const mockResult = { rows: [{ buyer_id: mockBuyerId }] };
 
-            const mockPool = await sql.connect();
-            const mockRequest = mockPool.request();
-            mockRequest.query.mockResolvedValueOnce(mockResult);
+            const mockClient = {
+                query: jest.fn().mockResolvedValueOnce(mockResult),
+                release: jest.fn()
+            };
+            const mockPool = new Pool();
+            mockPool.connect.mockResolvedValueOnce(mockClient);
 
             const response = await request(app)
                 .post('/api/buyers')
@@ -59,22 +59,15 @@ describe('Buyer API Endpoints', () => {
 
             expect(response.status).toBe(200);
             expect(response.body).toEqual({ message: 'Buyer added successfully' });
-            expect(sql.connect).toHaveBeenCalledWith({
-                user: 'sqlserveradmin',
-                password: 'Indiecart123',
-                server: 'indiecartserverus.database.windows.net',
-                database: 'IndieCartdb2_Copy',
-                options: {
-                    encrypt: true,
-                    enableArithAbort: true
-                }
-            });
-            expect(mockRequest.input).toHaveBeenCalledWith('buyer_id', sql.VarChar, mockBuyerId);
-            expect(mockRequest.query).toHaveBeenCalledWith('INSERT INTO buyer (buyer_id) VALUES (@buyer_id)');
+            expect(mockClient.query).toHaveBeenCalledWith(
+                'INSERT INTO buyer (buyer_id) VALUES ($1)',
+                [mockBuyerId]
+            );
         });
 
         it('should handle database errors', async () => {
-            sql.connect.mockRejectedValueOnce(new Error('Database connection failed'));
+            const mockPool = new Pool();
+            mockPool.connect.mockRejectedValueOnce(new Error('Database connection failed'));
 
             const response = await request(app)
                 .post('/api/buyers')

@@ -1,5 +1,5 @@
 const request = require('supertest');
-const sql = require('mssql');
+const { Pool } = require('pg');
 
 // Mock console.error to suppress error messages in tests
 const originalConsoleError = console.error;
@@ -11,24 +11,16 @@ afterAll(() => {
     console.error = originalConsoleError;
 });
 
-// Mock the sql module
-jest.mock('mssql', () => {
-    const mockRequest = {
-        input: jest.fn().mockReturnThis(),
-        query: jest.fn().mockResolvedValue({ recordset: [] })
-    };
+// Mock the pg module
+jest.mock('pg', () => {
     const mockPool = {
-        request: jest.fn().mockReturnValue(mockRequest)
+        connect: jest.fn().mockResolvedValue({
+            query: jest.fn().mockResolvedValue({ rows: [] }),
+            release: jest.fn()
+        })
     };
     return {
-        connect: jest.fn().mockResolvedValue(mockPool),
-        close: jest.fn(),
-        VarChar: jest.fn(),
-        Int: jest.fn(),
-        Decimal: jest.fn(),
-        VarBinary: jest.fn(),
-        MAX: Number.MAX_SAFE_INTEGER,
-        request: jest.fn().mockReturnValue(mockRequest)
+        Pool: jest.fn(() => mockPool)
     };
 });
 
@@ -50,14 +42,17 @@ describe('Product API Endpoints', () => {
             expect(response.body).toHaveProperty('error', 'Missing required fields');
         });
 
-        it('should return 400 if seller does not exist', async () => {
-            const mockPool = await sql.connect();
-            const mockRequest = mockPool.request();
-            mockRequest.query.mockResolvedValueOnce({ recordset: [] }); // Empty result means seller not found
+        it('should return 400 if seller not found', async () => {
+            const mockClient = {
+                query: jest.fn().mockResolvedValueOnce({ rows: [] }),
+                release: jest.fn()
+            };
+            const mockPool = new Pool();
+            mockPool.connect.mockResolvedValueOnce(mockClient);
 
             const response = await request(app)
                 .post('/api/products')
-                .field('seller_id', 'non-existent-seller')
+                .field('seller_id', 'nonexistent-seller')
                 .field('title', 'Test Product')
                 .field('description', 'Test Description')
                 .field('price', '10.99')
@@ -77,13 +72,14 @@ describe('Product API Endpoints', () => {
                 stock: 100
             };
 
-            const mockPool = await sql.connect();
-            const mockRequest = mockPool.request();
-            // First query for seller check
-            mockRequest.query
-                .mockResolvedValueOnce({ recordset: [{ seller_id: 'test-seller' }] })
-                // Second query for product insertion
-                .mockResolvedValueOnce({ recordset: [mockProduct] });
+            const mockClient = {
+                query: jest.fn()
+                    .mockResolvedValueOnce({ rows: [{ seller_id: 'test-seller' }] })
+                    .mockResolvedValueOnce({ rows: [mockProduct] }),
+                release: jest.fn()
+            };
+            const mockPool = new Pool();
+            mockPool.connect.mockResolvedValueOnce(mockClient);
 
             const response = await request(app)
                 .post('/api/products')
@@ -96,16 +92,10 @@ describe('Product API Endpoints', () => {
             expect(response.status).toBe(201);
             expect(response.body).toHaveProperty('message', 'Product added successfully');
             expect(response.body).toHaveProperty('product');
-            expect(sql.connect).toHaveBeenCalledWith({
-                user: 'sqlserveradmin',
-                password: 'Indiecart123',
-                server: 'indiecartserverus.database.windows.net',
-                database: 'IndieCartdb2_Copy',
-                options: {
-                    encrypt: true,
-                    enableArithAbort: true
-                }
-            });
+            expect(mockClient.query).toHaveBeenCalledWith(
+                'INSERT INTO products (seller_id, title, description, price, stock, image) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+                [mockProduct.seller_id, mockProduct.title, mockProduct.description, mockProduct.price, mockProduct.stock, null]
+            );
         });
     });
 
@@ -132,9 +122,12 @@ describe('Product API Endpoints', () => {
                 }
             ];
 
-            const mockPool = await sql.connect();
-            const mockRequest = mockPool.request();
-            mockRequest.query.mockResolvedValueOnce({ recordset: mockProducts });
+            const mockClient = {
+                query: jest.fn().mockResolvedValueOnce({ rows: mockProducts }),
+                release: jest.fn()
+            };
+            const mockPool = new Pool();
+            mockPool.connect.mockResolvedValueOnce(mockClient);
 
             const response = await request(app)
                 .get('/api/products');
@@ -146,7 +139,8 @@ describe('Product API Endpoints', () => {
         });
 
         it('should handle database errors', async () => {
-            sql.connect.mockRejectedValueOnce(new Error('Database connection failed'));
+            const mockPool = new Pool();
+            mockPool.connect.mockRejectedValueOnce(new Error('Database connection failed'));
 
             const response = await request(app)
                 .get('/api/products');
@@ -168,9 +162,12 @@ describe('Product API Endpoints', () => {
                 shop_name: 'Shop 1'
             };
 
-            const mockPool = await sql.connect();
-            const mockRequest = mockPool.request();
-            mockRequest.query.mockResolvedValueOnce({ recordset: [mockProduct] });
+            const mockClient = {
+                query: jest.fn().mockResolvedValueOnce({ rows: [mockProduct] }),
+                release: jest.fn()
+            };
+            const mockPool = new Pool();
+            mockPool.connect.mockResolvedValueOnce(mockClient);
 
             const response = await request(app)
                 .get('/api/products/1');
@@ -181,9 +178,12 @@ describe('Product API Endpoints', () => {
         });
 
         it('should return 404 if product not found', async () => {
-            const mockPool = await sql.connect();
-            const mockRequest = mockPool.request();
-            mockRequest.query.mockResolvedValueOnce({ recordset: [] });
+            const mockClient = {
+                query: jest.fn().mockResolvedValueOnce({ rows: [] }),
+                release: jest.fn()
+            };
+            const mockPool = new Pool();
+            mockPool.connect.mockResolvedValueOnce(mockClient);
 
             const response = await request(app)
                 .get('/api/products/999');
@@ -193,7 +193,8 @@ describe('Product API Endpoints', () => {
         });
 
         it('should handle database errors', async () => {
-            sql.connect.mockRejectedValueOnce(new Error('Database connection failed'));
+            const mockPool = new Pool();
+            mockPool.connect.mockRejectedValueOnce(new Error('Database connection failed'));
 
             const response = await request(app)
                 .get('/api/products/1');

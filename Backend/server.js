@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const sql = require('mssql');
+const { Pool } = require('pg');
 const path = require('path');
 const multer = require('multer');
 const PORT = process.env.PORT || 8080;
@@ -12,26 +12,29 @@ const upload = multer({ storage: multer.memoryStorage() });
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const dbConfig = {
-    user: 'sqlserveradmin',
+const pool = new Pool({
+    user: 'postgres.pjmkexdjtqpnfqcbakwp',
     password: 'Indiecart123',
-    server: 'indiecartserverus.database.windows.net',
-    database: 'IndieCartdb2_Copy',
-    options: {
-      encrypt: true,
-      enableArithAbort: true
-    }
-};
-  
+    host: 'aws-0-us-east-1.pooler.supabase.com',
+    port: 5432,
+    database: 'postgres',
+    ssl: {
+        rejectUnauthorized: false
+    },
+    // Session pooler settings
+    max: 20, // Maximum number of clients in the pool
+    idleTimeoutMillis: 30000, // How long a client is allowed to remain idle before being closed
+    connectionTimeoutMillis: 2000 // How long to wait for a connection to be established
+});
+
 async function testDbConnection() {
     try {
-        const pool = await sql.connect(dbConfig);
-        const result = await pool.request().query('SELECT 1 AS result');
-        console.log("✅ DB Connected! Result:", result.recordset);
-        sql.close();
+        const client = await pool.connect();
+        const result = await client.query('SELECT 1 AS result');
+        console.log("✅ DB Connected! Result:", result.rows);
+        client.release();
     } catch (err) {
         console.error("❌ DB Connection failed:", err.message);
-        sql.close();
     }
 }
 
@@ -49,10 +52,12 @@ app.post('/api/buyers', async (req, res) => {
             return res.status(400).json({ error: 'Buyer ID is required' });
         }
 
-        const pool = await sql.connect(dbConfig);
-        const result = await pool.request()
-            .input('buyer_id', sql.VarChar, buyer_id)
-            .query('INSERT INTO buyer (buyer_id) VALUES (@buyer_id)');
+        const client = await pool.connect();
+        const result = await client.query(
+            'INSERT INTO buyer (buyer_id) VALUES ($1)',
+            [buyer_id]
+        );
+        client.release();
         
         res.status(200).json({ message: 'Buyer added successfully' });
     } catch (error) {
@@ -76,37 +81,34 @@ app.post('/api/products', upload.single('image'), async (req, res) => {
             });
         }
 
-        const pool = await sql.connect(dbConfig);
+        const client = await pool.connect();
         
         // First check if seller exists
-        const sellerCheck = await pool.request()
-            .input('seller_id', sql.VarChar, seller_id)
-            .query('SELECT 1 FROM seller WHERE seller_id = @seller_id');
+        const sellerCheck = await client.query(
+            'SELECT 1 FROM seller WHERE seller_id = $1',
+            [seller_id]
+        );
 
-        if (sellerCheck.recordset.length === 0) {
+        if (sellerCheck.rows.length === 0) {
+            client.release();
             return res.status(400).json({ 
                 error: 'Seller not found',
                 message: 'Please register as a seller first before adding products'
             });
         }
 
-        const result = await pool.request()
-            .input('seller_id', sql.VarChar, seller_id)
-            .input('title', sql.VarChar, title)
-            .input('description', sql.VarChar, description)
-            .input('price', sql.Decimal(18, 2), price)
-            .input('stock', sql.Int, stock)
-            .input('image', sql.VarBinary(sql.MAX), req.file ? req.file.buffer : null)
-            .query(`
-                INSERT INTO products (seller_id, title, description, price, stock, image)
-                OUTPUT INSERTED.*
-                VALUES (@seller_id, @title, @description, @price, @stock, @image)
-            `);
+        const result = await client.query(
+            `INSERT INTO products (seller_id, title, description, price, stock, image)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             RETURNING *`,
+            [seller_id, title, description, price, stock, req.file ? req.file.buffer : null]
+        );
 
-        console.log('Product added successfully:', result.recordset[0]);
+        client.release();
+        console.log('Product added successfully:', result.rows[0]);
         res.status(201).json({ 
             message: 'Product added successfully',
-            product: result.recordset[0]
+            product: result.rows[0]
         });
     } catch (err) {
         console.error('Error adding product:', err);
@@ -114,41 +116,35 @@ app.post('/api/products', upload.single('image'), async (req, res) => {
             error: 'Failed to add product',
             details: err.message 
         });
-    } finally {
-        sql.close();
     }
 });
 
 // API endpoint to get all products
 app.get('/api/products', async (req, res) => {
     try {
-        const pool = await sql.connect(dbConfig);
-        const result = await pool.request()
-            .query(`
-                SELECT p.product_id, p.seller_id, p.title, p.description, p.price, p.stock, p.image, s.shop_name
-                FROM products p
-                LEFT JOIN seller s ON p.seller_id = s.seller_id
-                ORDER BY p.product_id DESC
-            `);
+        const client = await pool.connect();
+        const result = await client.query(`
+            SELECT p.product_id, p.seller_id, p.title, p.description, p.price, p.stock, p.image, s.shop_name
+            FROM products p
+            LEFT JOIN seller s ON p.seller_id = s.seller_id
+            ORDER BY p.product_id DESC
+        `);
 
         // Convert binary image data to base64
-        const productsWithImages = result.recordset.map(product => {
+        const productsWithImages = result.rows.map(product => {
             if (product.image) {
-                // Convert the binary buffer to base64
                 const base64Image = Buffer.from(product.image).toString('base64');
-                // Create a data URL that can be used in an img tag
                 product.image = `data:image/jpeg;base64,${base64Image}`;
             }
             return product;
         });
 
+        client.release();
         console.log('Retrieved products:', productsWithImages);
         res.json(productsWithImages);
     } catch (err) {
         console.error('Error fetching products:', err);
         res.status(500).json({ error: 'Failed to fetch products' });
-    } finally {
-        sql.close();
     }
 });
 
@@ -156,31 +152,29 @@ app.get('/api/products', async (req, res) => {
 app.get('/api/products/:productId', async (req, res) => {
     try {
         const { productId } = req.params;
-        const pool = await sql.connect(dbConfig);
-        const result = await pool.request()
-            .input('productId', sql.Int, productId)
-            .query(`
-                SELECT p.*, s.shop_name
-                FROM products p
-                LEFT JOIN seller s ON p.seller_id = s.seller_id
-                WHERE p.product_id = @productId
-            `);
+        const client = await pool.connect();
+        const result = await client.query(`
+            SELECT p.*, s.shop_name
+            FROM products p
+            LEFT JOIN seller s ON p.seller_id = s.seller_id
+            WHERE p.product_id = $1
+        `, [productId]);
 
-        if (result.recordset.length === 0) {
+        if (result.rows.length === 0) {
+            client.release();
             return res.status(404).json({ error: 'Product not found' });
         }
 
-        const product = result.recordset[0];
+        const product = result.rows[0];
         if (product.image) {
             product.image = `data:image/jpeg;base64,${Buffer.from(product.image).toString('base64')}`;
         }
 
+        client.release();
         res.json(product);
     } catch (err) {
         console.error('Error fetching product:', err);
         res.status(500).json({ error: 'Failed to fetch product' });
-    } finally {
-        sql.close();
     }
 });
 
@@ -188,23 +182,22 @@ app.get('/api/products/:productId', async (req, res) => {
 app.get('/api/products/seller/:shopName', async (req, res) => {
     try {
         const { shopName } = req.params;
-        const pool = await sql.connect(dbConfig);
-        const result = await pool.request()
-            .input('shopName', sql.VarChar, shopName)
-            .query(`
-                SELECT p.product_id, p.seller_id, p.title, p.description, p.price, p.stock, p.image, s.shop_name
-                FROM products p
-                LEFT JOIN seller s ON p.seller_id = s.seller_id
-                WHERE s.shop_name = @shopName
-                ORDER BY p.product_id DESC
-            `);
+        const client = await pool.connect();
+        const result = await client.query(`
+            SELECT p.product_id, p.seller_id, p.title, p.description, p.price, p.stock, p.image, s.shop_name
+            FROM products p
+            LEFT JOIN seller s ON p.seller_id = s.seller_id
+            WHERE s.shop_name = $1
+            ORDER BY p.product_id DESC
+        `, [shopName]);
 
-        if (result.recordset.length === 0) {
+        if (result.rows.length === 0) {
+            client.release();
             return res.status(404).json({ error: 'No products found for this seller' });
         }
 
         // Convert binary image data to base64
-        const productsWithImages = result.recordset.map(product => {
+        const productsWithImages = result.rows.map(product => {
             if (product.image) {
                 const base64Image = Buffer.from(product.image).toString('base64');
                 product.image = `data:image/jpeg;base64,${base64Image}`;
@@ -212,12 +205,11 @@ app.get('/api/products/seller/:shopName', async (req, res) => {
             return product;
         });
 
+        client.release();
         res.json(productsWithImages);
     } catch (err) {
         console.error('Error fetching seller products:', err);
         res.status(500).json({ error: 'Failed to fetch seller products' });
-    } finally {
-        sql.close();
     }
 });
 
@@ -230,28 +222,29 @@ app.post('/api/sellers', async (req, res) => {
             return res.status(400).json({ error: 'Seller ID and shop name are required' });
         }
 
-        const pool = await sql.connect(dbConfig);
+        const client = await pool.connect();
         
         // First check if seller already exists
-        const sellerCheck = await pool.request()
-            .input('seller_id', sql.VarChar, seller_id)
-            .query('SELECT 1 FROM seller WHERE seller_id = @seller_id');
+        const sellerCheck = await client.query(
+            'SELECT 1 FROM seller WHERE seller_id = $1',
+            [seller_id]
+        );
 
-        if (sellerCheck.recordset.length > 0) {
+        if (sellerCheck.rows.length > 0) {
+            client.release();
             return res.status(400).json({ error: 'You are already registered as a seller' });
         }
 
-        const result = await pool.request()
-            .input('seller_id', sql.VarChar, seller_id)
-            .input('shop_name', sql.VarChar, shop_name)
-            .query('INSERT INTO seller (seller_id, shop_name) VALUES (@seller_id, @shop_name)');
+        await client.query(
+            'INSERT INTO seller (seller_id, shop_name) VALUES ($1, $2)',
+            [seller_id, shop_name]
+        );
         
+        client.release();
         res.status(201).json({ message: 'Successfully registered as a seller' });
     } catch (error) {
         console.error('Error adding seller:', error);
         res.status(500).json({ error: 'Failed to register as seller' });
-    } finally {
-        sql.close();
     }
 });
 
@@ -259,50 +252,46 @@ app.post('/api/sellers', async (req, res) => {
 app.get('/api/seller/check/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
-        const pool = await sql.connect(dbConfig);
+        const client = await pool.connect();
         
         // Check if user is a seller
-        const sellerCheck = await pool.request()
-            .input('seller_id', sql.VarChar, userId)
-            .query(`
-                SELECT s.seller_id, s.shop_name, 
-                       (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.seller_id) as product_count
-                FROM seller s
-                WHERE s.seller_id = @seller_id
-            `);
+        const sellerCheck = await client.query(`
+            SELECT s.seller_id, s.shop_name, 
+                   (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.seller_id) as product_count
+            FROM seller s
+            WHERE s.seller_id = $1
+        `, [userId]);
 
-        if (sellerCheck.recordset.length === 0) {
+        if (sellerCheck.rows.length === 0) {
+            client.release();
             return res.status(404).json({ isSeller: false });
         }
 
         // Get seller's products
-        const productsResult = await pool.request()
-            .input('seller_id', sql.VarChar, userId)
-            .query(`
-                SELECT p.product_id, p.title, p.description, p.price, p.stock, p.image
-                FROM products p
-                WHERE p.seller_id = @seller_id
-                ORDER BY p.product_id DESC
-            `);
+        const productsResult = await client.query(`
+            SELECT p.product_id, p.title, p.description, p.price, p.stock, p.image
+            FROM products p
+            WHERE p.seller_id = $1
+            ORDER BY p.product_id DESC
+        `, [userId]);
 
         // Convert binary image data to base64
-        const productsWithImages = productsResult.recordset.map(product => {
+        const productsWithImages = productsResult.rows.map(product => {
             if (product.image) {
                 product.image = `data:image/jpeg;base64,${Buffer.from(product.image).toString('base64')}`;
             }
             return product;
         });
 
+        client.release();
         res.json({
             isSeller: true,
-            sellerInfo: sellerCheck.recordset[0],
+            sellerInfo: sellerCheck.rows[0],
             products: productsWithImages
         });
     } catch (error) {
         console.error('Error checking seller status:', error);
         res.status(500).json({ error: 'Failed to check seller status' });
-    } finally {
-        sql.close();
     }
 });
 
