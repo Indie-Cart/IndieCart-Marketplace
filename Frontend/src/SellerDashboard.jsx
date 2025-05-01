@@ -88,8 +88,8 @@ function SellerDashboard() {
                     <div className="no-image">No Image Available</div>
                   )}
                   <figcaption className="product-overlay">
-                    <Link to={`/products/${product.product_id}`} className="view-details-btn">
-                      View Details
+                    <Link to={`/edit-product/${product.product_id}`} className="view-details-btn">
+                      Edit Product
                     </Link>
                   </figcaption>
                 </figure>

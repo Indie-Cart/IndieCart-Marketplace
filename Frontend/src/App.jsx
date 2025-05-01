@@ -10,6 +10,7 @@ import ProductDetailsPage from './ProductDetailsPage';
 import SellerShopPage from './SellerShopPage';
 import ApplySellerPage from './ApplySellerPage';
 import SellerDashboard from './SellerDashboard';
+import EditProduct from './EditProduct';
 import "./App.css";
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
           <Route path="/seller/:shopName" element={<SellerShopPage />} />
           <Route path="/apply-seller" element={<ApplySellerPage />} />
           <Route path="/seller-dashboard" element={<SellerDashboard />} />
+          <Route path="/edit-product/:productId" element={<EditProduct />} />
         </Routes>
       </Layout>
     </Router>

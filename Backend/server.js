@@ -8,9 +8,9 @@ const PORT = process.env.PORT || 8080;
 // Configure multer for memory storage
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Middleware to parse JSON and form data
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Middleware to parse JSON and form data with increased limits
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 const pool = new Pool({
     user: 'postgres.pjmkexdjtqpnfqcbakwp',
@@ -292,6 +292,54 @@ app.get('/api/seller/check/:userId', async (req, res) => {
     } catch (error) {
         console.error('Error checking seller status:', error);
         res.status(500).json({ error: 'Failed to check seller status' });
+    }
+});
+
+// API endpoint to update a product
+app.put('/api/products/:productId', async (req, res) => {
+    try {
+        const { productId } = req.params;
+        const { title, description, price, stock } = req.body;
+
+        if (!title || !description || !price || !stock) {
+            return res.status(400).json({ 
+                error: 'Missing required fields',
+                received: req.body
+            });
+        }
+
+        const client = await pool.connect();
+        
+        // First check if product exists
+        const productCheck = await client.query(
+            'SELECT 1 FROM products WHERE product_id = $1',
+            [productId]
+        );
+
+        if (productCheck.rows.length === 0) {
+            client.release();
+            return res.status(404).json({ error: 'Product not found' });
+        }
+
+        const result = await client.query(
+            `UPDATE products 
+             SET title = $1, description = $2, price = $3, stock = $4
+             WHERE product_id = $5
+             RETURNING *`,
+            [title, description, price, stock, productId]
+        );
+
+        client.release();
+        res.json({ 
+            message: 'Product updated successfully',
+            product: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Error updating product:', err);
+        res.status(500).json({ 
+            error: 'Failed to update product',
+            details: err.message 
+        });
     }
 });
 
