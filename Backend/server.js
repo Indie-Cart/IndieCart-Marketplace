@@ -343,6 +343,39 @@ app.put('/api/products/:productId', async (req, res) => {
     }
 });
 
+// API endpoint to delete a product
+app.delete('/api/products/:productId', async (req, res) => {
+    try {
+        const { productId } = req.params;
+        const client = await pool.connect();
+        
+        // First check if product exists
+        const productCheck = await client.query(
+            'SELECT 1 FROM products WHERE product_id = $1',
+            [productId]
+        );
+
+        if (productCheck.rows.length === 0) {
+            client.release();
+            return res.status(404).json({ error: 'Product not found' });
+        }
+
+        await client.query(
+            'DELETE FROM products WHERE product_id = $1',
+            [productId]
+        );
+
+        client.release();
+        res.json({ message: 'Product deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting product:', err);
+        res.status(500).json({ 
+            error: 'Failed to delete product',
+            details: err.message 
+        });
+    }
+});
+
 //test api
 app.get('/tshirt', (req, res) => {
     res.status(200).send({

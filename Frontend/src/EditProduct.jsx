@@ -13,6 +13,7 @@ function EditProduct() {
   const { isAuthenticated, user } = useAuth0();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [product, setProduct] = useState({
     title: '',
     description: '',
@@ -52,9 +53,9 @@ function EditProduct() {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
-      // Ensure all numeric values are properly formatted
       const productData = {
         ...product,
         price: parseFloat(product.price),
@@ -75,7 +76,10 @@ function EditProduct() {
         throw new Error(data.error || 'Failed to update product');
       }
 
-      navigate('/seller-dashboard');
+      setSuccess('Product updated successfully!');
+      setTimeout(() => {
+        navigate('/seller-dashboard');
+      }, 1500);
     } catch (error) {
       console.error('Error updating product:', error);
       setError(error.message || 'Failed to update product. Please try again.');
@@ -90,20 +94,30 @@ function EditProduct() {
     }
 
     setLoading(true);
+    setError('');
+    setSuccess('');
+
     try {
       const response = await fetch(`${API_URL}/api/products/${productId}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        }
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || 'Failed to delete product');
       }
 
-      navigate('/seller-dashboard');
+      setSuccess('Product deleted successfully!');
+      setTimeout(() => {
+        navigate('/seller-dashboard');
+      }, 1500);
     } catch (error) {
       console.error('Error deleting product:', error);
-      setError('Failed to delete product');
+      setError(error.message || 'Failed to delete product. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -129,6 +143,7 @@ function EditProduct() {
     <main className="edit-product">
       <div className="container">
         <h1>Edit Product</h1>
+        {success && <div className="success-message">{success}</div>}
         <form onSubmit={handleSubmit} className="edit-product-form">
           <div className="form-group">
             <label htmlFor="title">Product Title</label>
