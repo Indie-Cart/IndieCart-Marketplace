@@ -16,6 +16,9 @@ function Layout({ children }) {
             <ul>
               <li><Link to="/" className="active">Home</Link></li>
               <li><Link to="/products">Browse Products</Link></li>
+              {isAuthenticated && (
+                <li><Link to="/cart" className="cart-link">Cart</Link></li>
+              )}
               {isAuthenticated ? (
                 <>
                   <li><Link to="/seller-dashboard">Seller Dashboard</Link></li>

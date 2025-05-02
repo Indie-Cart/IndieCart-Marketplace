@@ -3,10 +3,22 @@ const app = express();
 const { Pool } = require('pg');
 const path = require('path');
 const multer = require('multer');
+const cors = require('cors');
 const PORT = process.env.PORT || 8080;
 
 // Configure multer for memory storage
 const upload = multer({ storage: multer.memoryStorage() });
+
+// Configure CORS
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:8080',
+    'https://indiecart-dwgnhtdnh9fvashy.eastus-01.azurewebsites.net',
+    'https://indiecart.vercel.app'
+  ],
+  credentials: true
+}));
 
 // Middleware to parse JSON and form data with increased limits
 app.use(express.json({ limit: '50mb' }));
@@ -42,6 +54,42 @@ async function testDbConnection() {
 if (require.main === module) {
     testDbConnection();
 }
+
+// Middleware to validate user ID
+const validateUser = async (req, res, next) => {
+  const userId = req.headers['x-user-id'];
+  
+  if (!userId) {
+    return res.status(401).json({ error: 'User ID is required' });
+  }
+
+  try {
+    const client = await pool.connect();
+    const result = await client.query(
+      'SELECT 1 FROM buyer WHERE buyer_id = $1',
+      [userId]
+    );
+    client.release();
+
+    if (result.rows.length === 0) {
+      // Create buyer if they don't exist
+      const client2 = await pool.connect();
+      await client2.query(
+        'INSERT INTO buyer (buyer_id) VALUES ($1)',
+        [userId]
+      );
+      client2.release();
+    }
+
+    next();
+  } catch (err) {
+    console.error('Error validating user:', err);
+    res.status(500).json({ error: 'Failed to validate user' });
+  }
+};
+
+// Apply the validateUser middleware to cart routes
+app.use('/api/cart', validateUser);
 
 // API endpoint to add new buyer
 app.post('/api/buyers', async (req, res) => {
@@ -373,6 +421,282 @@ app.delete('/api/products/:productId', async (req, res) => {
             error: 'Failed to delete product',
             details: err.message 
         });
+    }
+});
+
+// API endpoint to add item to cart
+app.post('/api/cart/add', async (req, res) => {
+    try {
+        const { productId, quantity } = req.body;
+        const buyerId = req.headers['x-user-id'];
+
+        if (!buyerId) {
+            return res.status(401).json({ error: 'User not authenticated' });
+        }
+
+        if (!productId || !quantity) {
+            return res.status(400).json({ error: 'Product ID and quantity are required' });
+        }
+
+        const client = await pool.connect();
+
+        // Start a transaction
+        await client.query('BEGIN');
+
+        try {
+            // Check if product exists and has enough stock
+            const productResult = await client.query(
+                'SELECT stock FROM products WHERE product_id = $1',
+                [productId]
+            );
+
+            if (productResult.rows.length === 0) {
+                throw new Error('Product not found');
+            }
+
+            const currentStock = productResult.rows[0].stock;
+            if (currentStock < quantity) {
+                throw new Error('Not enough stock available');
+            }
+
+            // Check if buyer has an active cart
+            let orderResult = await client.query(
+                'SELECT order_id FROM "order" WHERE buyer_id = $1 AND status = $2',
+                [buyerId, 'cart']
+            );
+
+            let orderId;
+
+            if (orderResult.rows.length === 0) {
+                // Create new cart order
+                const newOrderResult = await client.query(
+                    'INSERT INTO "order" (buyer_id, status) VALUES ($1, $2) RETURNING order_id',
+                    [buyerId, 'cart']
+                );
+                orderId = newOrderResult.rows[0].order_id;
+            } else {
+                orderId = orderResult.rows[0].order_id;
+            }
+
+            // Check if product is already in cart
+            const existingItemResult = await client.query(
+                'SELECT quantity FROM order_products WHERE order_id = $1 AND product_id = $2',
+                [orderId, productId]
+            );
+
+            if (existingItemResult.rows.length > 0) {
+                // Update existing item quantity
+                const newQuantity = existingItemResult.rows[0].quantity + quantity;
+                if (newQuantity > currentStock) {
+                    throw new Error('Not enough stock available for the total quantity');
+                }
+
+                await client.query(
+                    'UPDATE order_products SET quantity = $1 WHERE order_id = $2 AND product_id = $3',
+                    [newQuantity, orderId, productId]
+                );
+            } else {
+                // Add new item to cart
+                await client.query(
+                    'INSERT INTO order_products (order_id, product_id, quantity) VALUES ($1, $2, $3)',
+                    [orderId, productId, quantity]
+                );
+            }
+
+            // Update product stock
+            await client.query(
+                'UPDATE products SET stock = stock - $1 WHERE product_id = $2',
+                [quantity, productId]
+            );
+
+            await client.query('COMMIT');
+            res.status(200).json({ message: 'Item added to cart successfully' });
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error('Error adding item to cart:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// API endpoint to get cart items
+app.get('/api/cart', async (req, res) => {
+    try {
+        const buyerId = req.headers['x-user-id'];
+
+        if (!buyerId) {
+            return res.status(401).json({ error: 'User not authenticated' });
+        }
+
+        const client = await pool.connect();
+        const result = await client.query(`
+            SELECT 
+                p.product_id,
+                p.title,
+                p.description,
+                p.price,
+                p.image,
+                op.quantity,
+                p.stock
+            FROM "order" o
+            JOIN order_products op ON o.order_id = op.order_id
+            JOIN products p ON op.product_id = p.product_id
+            WHERE o.buyer_id = $1 AND o.status = 'cart'
+        `, [buyerId]);
+
+        // Convert binary image data to base64
+        const cartItems = result.rows.map(item => {
+            if (item.image) {
+                item.image = `data:image/jpeg;base64,${Buffer.from(item.image).toString('base64')}`;
+            }
+            return item;
+        });
+
+        client.release();
+        res.json(cartItems);
+    } catch (err) {
+        console.error('Error fetching cart items:', err);
+        res.status(500).json({ error: 'Failed to fetch cart items' });
+    }
+});
+
+// API endpoint to update cart item quantity
+app.put('/api/cart/update', async (req, res) => {
+    try {
+        const { productId, quantity } = req.body;
+        const buyerId = req.headers['x-user-id'];
+
+        if (!buyerId) {
+            return res.status(401).json({ error: 'User not authenticated' });
+        }
+
+        if (!productId || !quantity) {
+            return res.status(400).json({ error: 'Product ID and quantity are required' });
+        }
+
+        const client = await pool.connect();
+
+        // Start a transaction
+        await client.query('BEGIN');
+
+        try {
+            // Get current cart item quantity
+            const currentQuantityResult = await client.query(`
+                SELECT op.quantity, p.stock
+                FROM "order" o
+                JOIN order_products op ON o.order_id = op.order_id
+                JOIN products p ON op.product_id = p.product_id
+                WHERE o.buyer_id = $1 AND o.status = 'cart' AND op.product_id = $2
+            `, [buyerId, productId]);
+
+            if (currentQuantityResult.rows.length === 0) {
+                throw new Error('Item not found in cart');
+            }
+
+            const currentQuantity = currentQuantityResult.rows[0].quantity;
+            const availableStock = currentQuantityResult.rows[0].stock + currentQuantity;
+
+            if (quantity > availableStock) {
+                throw new Error('Not enough stock available');
+            }
+
+            // Update cart item quantity
+            await client.query(`
+                UPDATE order_products op
+                SET quantity = $1
+                FROM "order" o
+                WHERE o.order_id = op.order_id
+                AND o.buyer_id = $2
+                AND o.status = 'cart'
+                AND op.product_id = $3
+            `, [quantity, buyerId, productId]);
+
+            // Update product stock
+            const stockDifference = currentQuantity - quantity;
+            await client.query(
+                'UPDATE products SET stock = stock + $1 WHERE product_id = $2',
+                [stockDifference, productId]
+            );
+
+            await client.query('COMMIT');
+            res.status(200).json({ message: 'Cart item updated successfully' });
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error('Error updating cart item:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// API endpoint to remove item from cart
+app.delete('/api/cart/remove', async (req, res) => {
+    try {
+        const { productId } = req.body;
+        const buyerId = req.headers['x-user-id'];
+
+        if (!buyerId) {
+            return res.status(401).json({ error: 'User not authenticated' });
+        }
+
+        if (!productId) {
+            return res.status(400).json({ error: 'Product ID is required' });
+        }
+
+        const client = await pool.connect();
+
+        // Start a transaction
+        await client.query('BEGIN');
+
+        try {
+            // Get current cart item quantity
+            const quantityResult = await client.query(`
+                SELECT op.quantity
+                FROM "order" o
+                JOIN order_products op ON o.order_id = op.order_id
+                WHERE o.buyer_id = $1 AND o.status = 'cart' AND op.product_id = $2
+            `, [buyerId, productId]);
+
+            if (quantityResult.rows.length === 0) {
+                throw new Error('Item not found in cart');
+            }
+
+            const quantity = quantityResult.rows[0].quantity;
+
+            // Remove item from cart
+            await client.query(`
+                DELETE FROM order_products op
+                USING "order" o
+                WHERE o.order_id = op.order_id
+                AND o.buyer_id = $1
+                AND o.status = 'cart'
+                AND op.product_id = $2
+            `, [buyerId, productId]);
+
+            // Update product stock
+            await client.query(
+                'UPDATE products SET stock = stock + $1 WHERE product_id = $2',
+                [quantity, productId]
+            );
+
+            await client.query('COMMIT');
+            res.status(200).json({ message: 'Item removed from cart successfully' });
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            client.release();
+        }
+    } catch (err) {
+        console.error('Error removing item from cart:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 

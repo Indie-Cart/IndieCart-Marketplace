@@ -82,6 +82,18 @@ nav a.active {
   text-align: center;
 }
 
+.cart-link {
+  position: relative;
+  padding: 0.5rem 1rem;
+  color: var(--text-color);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.cart-link:hover {
+  color: var(--primary-color);
+}
+
 @media (max-width: 768px) {
   .header .container {
     flex-direction: column;

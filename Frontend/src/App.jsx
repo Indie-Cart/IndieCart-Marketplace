@@ -11,6 +11,7 @@ import SellerShopPage from './SellerShopPage';
 import ApplySellerPage from './ApplySellerPage';
 import SellerDashboard from './SellerDashboard';
 import EditProduct from './EditProduct';
+import CartPage from './CartPage';
 import "./App.css";
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
           <Route path="/apply-seller" element={<ApplySellerPage />} />
           <Route path="/seller-dashboard" element={<SellerDashboard />} />
           <Route path="/edit-product/:productId" element={<EditProduct />} />
+          <Route path="/cart" element={<CartPage />} />
         </Routes>
       </Layout>
     </Router>
