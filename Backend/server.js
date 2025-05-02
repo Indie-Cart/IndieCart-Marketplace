@@ -397,24 +397,40 @@ app.delete('/api/products/:productId', async (req, res) => {
         const { productId } = req.params;
         const client = await pool.connect();
         
-        // First check if product exists
-        const productCheck = await client.query(
-            'SELECT 1 FROM products WHERE product_id = $1',
-            [productId]
-        );
+        // Start a transaction
+        await client.query('BEGIN');
 
-        if (productCheck.rows.length === 0) {
+        try {
+            // First check if product exists
+            const productCheck = await client.query(
+                'SELECT 1 FROM products WHERE product_id = $1',
+                [productId]
+            );
+
+            if (productCheck.rows.length === 0) {
+                throw new Error('Product not found');
+            }
+
+            // Delete from order_products first (due to foreign key constraint)
+            await client.query(
+                'DELETE FROM order_products WHERE product_id = $1',
+                [productId]
+            );
+
+            // Then delete the product
+            await client.query(
+                'DELETE FROM products WHERE product_id = $1',
+                [productId]
+            );
+
+            await client.query('COMMIT');
+            res.json({ message: 'Product deleted successfully' });
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
             client.release();
-            return res.status(404).json({ error: 'Product not found' });
         }
-
-        await client.query(
-            'DELETE FROM products WHERE product_id = $1',
-            [productId]
-        );
-
-        client.release();
-        res.json({ message: 'Product deleted successfully' });
     } catch (err) {
         console.error('Error deleting product:', err);
         res.status(500).json({ 
@@ -584,9 +600,9 @@ app.put('/api/cart/update', async (req, res) => {
         await client.query('BEGIN');
 
         try {
-            // Get current cart item quantity
+            // Get current cart item quantity and order_id
             const currentQuantityResult = await client.query(`
-                SELECT op.quantity, p.stock
+                SELECT op.quantity, p.stock, o.order_id
                 FROM "order" o
                 JOIN order_products op ON o.order_id = op.order_id
                 JOIN products p ON op.product_id = p.product_id
@@ -599,21 +615,40 @@ app.put('/api/cart/update', async (req, res) => {
 
             const currentQuantity = currentQuantityResult.rows[0].quantity;
             const availableStock = currentQuantityResult.rows[0].stock + currentQuantity;
+            const orderId = currentQuantityResult.rows[0].order_id;
 
             if (quantity > availableStock) {
                 throw new Error('Not enough stock available');
             }
 
-            // Update cart item quantity
-            await client.query(`
-                UPDATE order_products op
-                SET quantity = $1
-                FROM "order" o
-                WHERE o.order_id = op.order_id
-                AND o.buyer_id = $2
-                AND o.status = 'cart'
-                AND op.product_id = $3
-            `, [quantity, buyerId, productId]);
+            if (quantity <= 0) {
+                // Remove item from cart if quantity is 0 or negative
+                await client.query(`
+                    DELETE FROM order_products
+                    WHERE order_id = $1 AND product_id = $2
+                `, [orderId, productId]);
+
+                // Check if cart is empty
+                const remainingItems = await client.query(
+                    'SELECT COUNT(*) FROM order_products WHERE order_id = $1',
+                    [orderId]
+                );
+
+                if (remainingItems.rows[0].count === '0') {
+                    // Delete the empty order
+                    await client.query(
+                        'DELETE FROM "order" WHERE order_id = $1',
+                        [orderId]
+                    );
+                }
+            } else {
+                // Update cart item quantity
+                await client.query(`
+                    UPDATE order_products
+                    SET quantity = $1
+                    WHERE order_id = $2 AND product_id = $3
+                `, [quantity, orderId, productId]);
+            }
 
             // Update product stock
             const stockDifference = currentQuantity - quantity;
@@ -656,9 +691,9 @@ app.delete('/api/cart/remove', async (req, res) => {
         await client.query('BEGIN');
 
         try {
-            // Get current cart item quantity
+            // Get current cart item quantity and order_id
             const quantityResult = await client.query(`
-                SELECT op.quantity
+                SELECT op.quantity, o.order_id
                 FROM "order" o
                 JOIN order_products op ON o.order_id = op.order_id
                 WHERE o.buyer_id = $1 AND o.status = 'cart' AND op.product_id = $2
@@ -669,16 +704,27 @@ app.delete('/api/cart/remove', async (req, res) => {
             }
 
             const quantity = quantityResult.rows[0].quantity;
+            const orderId = quantityResult.rows[0].order_id;
 
             // Remove item from cart
             await client.query(`
-                DELETE FROM order_products op
-                USING "order" o
-                WHERE o.order_id = op.order_id
-                AND o.buyer_id = $1
-                AND o.status = 'cart'
-                AND op.product_id = $2
-            `, [buyerId, productId]);
+                DELETE FROM order_products
+                WHERE order_id = $1 AND product_id = $2
+            `, [orderId, productId]);
+
+            // Check if cart is empty
+            const remainingItems = await client.query(
+                'SELECT COUNT(*) FROM order_products WHERE order_id = $1',
+                [orderId]
+            );
+
+            if (remainingItems.rows[0].count === '0') {
+                // Delete the empty order
+                await client.query(
+                    'DELETE FROM "order" WHERE order_id = $1',
+                    [orderId]
+                );
+            }
 
             // Update product stock
             await client.query(
