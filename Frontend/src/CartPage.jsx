@@ -110,21 +110,21 @@ function CartPage() {
                     <h3>{item.title}</h3>
                     <p className="price">R{item.price}</p>
                     <div className="quantity-controls">
-                      <button 
+                      <button
                         onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
                         disabled={item.quantity <= 1}
                       >
                         -
                       </button>
                       <span>{item.quantity}</span>
-                      <button 
+                      <button
                         onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
                         disabled={item.quantity >= item.stock}
                       >
                         +
                       </button>
                     </div>
-                    <button 
+                    <button
                       className="remove-btn"
                       onClick={() => removeItem(item.product_id)}
                     >
@@ -136,9 +136,9 @@ function CartPage() {
             </div>
             <div className="cart-summary">
               <h3>Total: R{calculateTotal().toFixed(2)}</h3>
-              <button 
+              <button
                 className="checkout-btn"
-                onClick={() => navigate('/checkout')}
+                onClick={() => navigate('/shipping')}
               >
                 Proceed to Checkout
               </button>
