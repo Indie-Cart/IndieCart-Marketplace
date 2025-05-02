@@ -12,6 +12,7 @@ import ApplySellerPage from './ApplySellerPage';
 import SellerDashboard from './SellerDashboard';
 import EditProduct from './EditProduct';
 import CartPage from './CartPage';
+import ShippingPage from './ShippingPage';
 import "./App.css";
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
           <Route path="/seller-dashboard" element={<SellerDashboard />} />
           <Route path="/edit-product/:productId" element={<EditProduct />} />
           <Route path="/cart" element={<CartPage />} />
+          <Route path="/shipping" element={<ShippingPage />} />
         </Routes>
       </Layout>
     </Router>
