@@ -11,13 +11,13 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // Configure CORS
 app.use(cors({
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:8080',
-    'https://indiecart-dwgnhtdnh9fvashy.eastus-01.azurewebsites.net',
-    'https://indiecart.vercel.app'
-  ],
-  credentials: true
+    origin: [
+        'http://localhost:5173',
+        'http://localhost:8080',
+        'https://indiecart-dwgnhtdnh9fvashy.eastus-01.azurewebsites.net',
+        'https://indiecart.vercel.app'
+    ],
+    credentials: true
 }));
 
 // Middleware to parse JSON and form data with increased limits
@@ -57,35 +57,35 @@ if (require.main === module) {
 
 // Middleware to validate user ID
 const validateUser = async (req, res, next) => {
-  const userId = req.headers['x-user-id'];
-  
-  if (!userId) {
-    return res.status(401).json({ error: 'User ID is required' });
-  }
+    const userId = req.headers['x-user-id'];
 
-  try {
-    const client = await pool.connect();
-    const result = await client.query(
-      'SELECT 1 FROM buyer WHERE buyer_id = $1',
-      [userId]
-    );
-    client.release();
-
-    if (result.rows.length === 0) {
-      // Create buyer if they don't exist
-      const client2 = await pool.connect();
-      await client2.query(
-        'INSERT INTO buyer (buyer_id) VALUES ($1)',
-        [userId]
-      );
-      client2.release();
+    if (!userId) {
+        return res.status(401).json({ error: 'User ID is required' });
     }
 
-    next();
-  } catch (err) {
-    console.error('Error validating user:', err);
-    res.status(500).json({ error: 'Failed to validate user' });
-  }
+    try {
+        const client = await pool.connect();
+        const result = await client.query(
+            'SELECT 1 FROM buyer WHERE buyer_id = $1',
+            [userId]
+        );
+        client.release();
+
+        if (result.rows.length === 0) {
+            // Create buyer if they don't exist
+            const client2 = await pool.connect();
+            await client2.query(
+                'INSERT INTO buyer (buyer_id) VALUES ($1)',
+                [userId]
+            );
+            client2.release();
+        }
+
+        next();
+    } catch (err) {
+        console.error('Error validating user:', err);
+        res.status(500).json({ error: 'Failed to validate user' });
+    }
 };
 
 // Apply the validateUser middleware to cart routes
@@ -95,7 +95,7 @@ app.use('/api/cart', validateUser);
 app.post('/api/buyers', async (req, res) => {
     try {
         const { buyer_id } = req.body;
-        
+
         if (!buyer_id) {
             return res.status(400).json({ error: 'Buyer ID is required' });
         }
@@ -106,7 +106,7 @@ app.post('/api/buyers', async (req, res) => {
             [buyer_id]
         );
         client.release();
-        
+
         res.status(200).json({ message: 'Buyer added successfully' });
     } catch (error) {
         console.error('Error adding buyer:', error);
@@ -119,18 +119,18 @@ app.post('/api/products', upload.single('image'), async (req, res) => {
     try {
         console.log('Adding new product - Request body:', req.body);
         console.log('Image file:', req.file);
-        
+
         const { seller_id, title, description, price, stock } = req.body;
-        
+
         if (!seller_id || !title || !description || !price || !stock) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'Missing required fields',
                 received: req.body
             });
         }
 
         const client = await pool.connect();
-        
+
         // First check if seller exists
         const sellerCheck = await client.query(
             'SELECT 1 FROM seller WHERE seller_id = $1',
@@ -139,7 +139,7 @@ app.post('/api/products', upload.single('image'), async (req, res) => {
 
         if (sellerCheck.rows.length === 0) {
             client.release();
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'Seller not found',
                 message: 'Please register as a seller first before adding products'
             });
@@ -154,15 +154,15 @@ app.post('/api/products', upload.single('image'), async (req, res) => {
 
         client.release();
         console.log('Product added successfully:', result.rows[0]);
-        res.status(201).json({ 
+        res.status(201).json({
             message: 'Product added successfully',
             product: result.rows[0]
         });
     } catch (err) {
         console.error('Error adding product:', err);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to add product',
-            details: err.message 
+            details: err.message
         });
     }
 });
@@ -265,13 +265,13 @@ app.get('/api/products/seller/:shopName', async (req, res) => {
 app.post('/api/sellers', async (req, res) => {
     try {
         const { seller_id, shop_name } = req.body;
-        
+
         if (!seller_id || !shop_name) {
             return res.status(400).json({ error: 'Seller ID and shop name are required' });
         }
 
         const client = await pool.connect();
-        
+
         // First check if seller already exists
         const sellerCheck = await client.query(
             'SELECT 1 FROM seller WHERE seller_id = $1',
@@ -287,7 +287,7 @@ app.post('/api/sellers', async (req, res) => {
             'INSERT INTO seller (seller_id, shop_name) VALUES ($1, $2)',
             [seller_id, shop_name]
         );
-        
+
         client.release();
         res.status(201).json({ message: 'Successfully registered as a seller' });
     } catch (error) {
@@ -301,7 +301,7 @@ app.get('/api/seller/check/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
         const client = await pool.connect();
-        
+
         // Check if user is a seller
         const sellerCheck = await client.query(`
             SELECT s.seller_id, s.shop_name, 
@@ -350,14 +350,14 @@ app.put('/api/products/:productId', async (req, res) => {
         const { title, description, price, stock } = req.body;
 
         if (!title || !description || !price || !stock) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'Missing required fields',
                 received: req.body
             });
         }
 
         const client = await pool.connect();
-        
+
         // First check if product exists
         const productCheck = await client.query(
             'SELECT 1 FROM products WHERE product_id = $1',
@@ -378,15 +378,15 @@ app.put('/api/products/:productId', async (req, res) => {
         );
 
         client.release();
-        res.json({ 
+        res.json({
             message: 'Product updated successfully',
             product: result.rows[0]
         });
     } catch (err) {
         console.error('Error updating product:', err);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to update product',
-            details: err.message 
+            details: err.message
         });
     }
 });
@@ -396,7 +396,7 @@ app.delete('/api/products/:productId', async (req, res) => {
     try {
         const { productId } = req.params;
         const client = await pool.connect();
-        
+
         // Start a transaction
         await client.query('BEGIN');
 
@@ -433,9 +433,9 @@ app.delete('/api/products/:productId', async (req, res) => {
         }
     } catch (err) {
         console.error('Error deleting product:', err);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to delete product',
-            details: err.message 
+            details: err.message
         });
     }
 });
@@ -758,6 +758,67 @@ app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
 app.get('/*splat', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/dist/index.html'))
+});
+
+// API endpoint to update buyer shipping details
+app.put('/api/buyers/update', async (req, res) => {
+    try {
+        const buyerId = req.headers['x-user-id'];
+        const { shipping_address, suburb, city, province, postal_code, name, number } = req.body;
+
+        if (!buyerId) {
+            return res.status(401).json({ error: 'User not authenticated' });
+        }
+
+        const client = await pool.connect();
+        const result = await client.query(
+            `UPDATE buyer 
+             SET shipping_address = $1, 
+                 suburb = $2, 
+                 city = $3, 
+                 province = $4, 
+                 postal_code = $5, 
+                 name = $6, 
+                 number = $7
+             WHERE buyer_id = $8`,
+            [shipping_address, suburb, city, province, postal_code, name, number, buyerId]
+        );
+        client.release();
+
+        res.status(200).json({ message: 'Shipping details updated successfully' });
+    } catch (error) {
+        console.error('Error updating shipping details:', error);
+        res.status(500).json({ error: 'Failed to update shipping details' });
+    }
+});
+
+// API endpoint to get buyer shipping details
+app.get('/api/buyers/details', async (req, res) => {
+    try {
+        const buyerId = req.headers['x-user-id'];
+
+        if (!buyerId) {
+            return res.status(401).json({ error: 'User not authenticated' });
+        }
+
+        const client = await pool.connect();
+        const result = await client.query(
+            `SELECT shipping_address, suburb, city, province, postal_code, name, number
+             FROM buyer 
+             WHERE buyer_id = $1`,
+            [buyerId]
+        );
+        client.release();
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Buyer not found' });
+        }
+
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Error fetching buyer details:', error);
+        res.status(500).json({ error: 'Failed to fetch buyer details' });
+    }
 });
 
 // Only start the server when running the file directly
