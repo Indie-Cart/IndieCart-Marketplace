@@ -51,8 +51,7 @@ function CheckoutPage() {
                 },
                 credentials: 'include',
                 body: JSON.stringify({
-                    amount: Math.round(total * 100), // Convert to cents
-                    currency: 'ZAR'
+                    amount: Math.round(total * 100) // Convert to cents for Stripe
                 })
             });
 
@@ -91,7 +90,7 @@ function CheckoutPage() {
                         className="payment-btn"
                         onClick={handlePayment}
                     >
-                        Pay with Yoco
+                        Pay with Card
                     </button>
                 </div>
             </section>

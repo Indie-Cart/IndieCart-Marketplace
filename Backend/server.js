@@ -5,6 +5,7 @@ const path = require('path');
 const multer = require('multer');
 const cors = require('cors');
 const PORT = process.env.PORT || 8080;
+const stripe = require('stripe')('sk_test_51RKJnzCSe9LtgDWXmINjc7FwgUSuhRR9rD1dNsUs85urygKhT8TaTjx1pHBHBmHEgROiYmPP0fX811lYgClN5TaW00vuKBReu5');
 
 // Configure multer for memory storage
 const upload = multer({ storage: multer.memoryStorage() });
@@ -819,6 +820,81 @@ app.get('/api/buyers/details', async (req, res) => {
         console.error('Error fetching buyer details:', error);
         res.status(500).json({ error: 'Failed to fetch buyer details' });
     }
+});
+
+// API endpoint to create Stripe checkout session
+app.post('/api/checkout', async (req, res) => {
+    try {
+        const buyerId = req.headers['x-user-id'];
+        const { amount } = req.body;
+
+        if (!buyerId) {
+            return res.status(401).json({ error: 'User not authenticated' });
+        }
+
+        // Create Stripe checkout session
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'zar',
+                        product_data: {
+                            name: 'IndieCart Order',
+                        },
+                        unit_amount: amount,
+                    },
+                    quantity: 1,
+                },
+            ],
+            mode: 'payment',
+            success_url: `${req.headers.origin}/?payment=success`,
+            cancel_url: `${req.headers.origin}/cart`,
+            metadata: {
+                buyerId: buyerId
+            }
+        });
+
+        res.json({ redirectUrl: session.url });
+    } catch (error) {
+        console.error('Error creating checkout session:', error);
+        res.status(500).json({ error: 'Failed to create checkout session' });
+    }
+});
+
+// Webhook endpoint to handle successful payments
+app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    let event;
+
+    try {
+        event = stripe.webhooks.constructEvent(req.body, sig, 'your_webhook_secret');
+    } catch (err) {
+        console.error('Webhook Error:', err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        const buyerId = session.metadata.buyerId;
+
+        try {
+            const client = await pool.connect();
+            // Update order status from 'cart' to 'paid'
+            await client.query(
+                `UPDATE "order" 
+                 SET status = 'paid' 
+                 WHERE buyer_id = $1 AND status = 'cart'`,
+                [buyerId]
+            );
+            client.release();
+        } catch (error) {
+            console.error('Error updating order status:', error);
+            return res.status(500).json({ error: 'Failed to update order status' });
+        }
+    }
+
+    res.json({ received: true });
 });
 
 // Only start the server when running the file directly
