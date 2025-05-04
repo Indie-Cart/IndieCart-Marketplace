@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">59.16% </span>
+                <span class="strong">61.38% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>213/360</span>
+                <span class='fraction'>221/360</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">53.33% </span>
+                <span class="strong">54.28% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>56/105</span>
+                <span class='fraction'>57/105</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">59.16% </span>
+                <span class="strong">61.38% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>213/360</span>
+                <span class='fraction'>221/360</span>
             </div>
         
             
@@ -1782,31 +1782,31 @@
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -2701,27 +2701,27 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    if (event.type === 'checkout.session.completed') {</span>
-        const session = <span class="cstat-no" title="statement not covered" >event.data.object;</span>
-        const buyerId = <span class="cstat-no" title="statement not covered" >session.metadata.buyerId;</span>
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        const buyerId = session.metadata.buyerId;
 &nbsp;
-<span class="cstat-no" title="statement not covered" >        try {</span>
-            const client = <span class="cstat-no" title="statement not covered" >await pool.connect();</span>
+        try {
+            const client = await pool.connect();
             // Update order status from 'cart' to 'paid'
-<span class="cstat-no" title="statement not covered" >            await client.query(</span>
+            await client.query(
                 `UPDATE "order" 
                  SET status = 'paid' 
                  WHERE buyer_id = $1 AND status = 'cart'`,
                 [buyerId]
             );
-<span class="cstat-no" title="statement not covered" >            client.release();</span>
+            client.release();
         } catch (error) {
 <span class="cstat-no" title="statement not covered" >            console.error('Error updating order status:', error);</span>
 <span class="cstat-no" title="statement not covered" >            return res.status(500).json({ error: 'Failed to update order status' });</span>
         }
     }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    res.json({ received: true });</span>
+    res.json({ received: true });
 });
 &nbsp;
 //test api
@@ -2815,7 +2815,7 @@ module.exports = app;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-05-04T12:13:54.619Z
+                at 2025-05-04T16:17:14.851Z
             </div>
         <script src="prettify.js"></script>
         <script>

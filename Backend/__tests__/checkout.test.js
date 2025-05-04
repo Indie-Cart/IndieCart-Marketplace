@@ -13,19 +13,24 @@ jest.mock('stripe', () => {
                 create: jest.fn().mockResolvedValue({
                     url: 'https://checkout.stripe.com/test'
                 })
-            },
-            webhooks: {
-                constructEvent: jest.fn().mockImplementation((payload, sig, secret) => ({
-                    type: 'checkout.session.completed',
-                    data: {
-                        object: {
-                            metadata: {
-                                buyerId: 'test-buyer-id'
+            }
+        },
+        webhooks: {
+            constructEvent: jest.fn().mockImplementation((payload, sig, secret) => {
+                if (sig === 'test-signature') {
+                    return {
+                        type: 'checkout.session.completed',
+                        data: {
+                            object: {
+                                metadata: {
+                                    buyerId: 'test-buyer-id'
+                                }
                             }
                         }
-                    }
-                }))
-            }
+                    };
+                }
+                throw new Error('Invalid signature');
+            })
         }
     }));
 });
@@ -69,17 +74,6 @@ describe('Checkout API Endpoints', () => {
         });
 
         it('should handle invalid webhook signature', async () => {
-            // Mock stripe.webhooks.constructEvent to throw an error
-            stripe.mockImplementationOnce(() => ({
-                checkout: {
-                    webhooks: {
-                        constructEvent: jest.fn().mockImplementation(() => {
-                            throw new Error('Invalid signature');
-                        })
-                    }
-                }
-            }));
-
             const response = await request(app)
                 .post('/api/webhook')
                 .set('stripe-signature', 'invalid-signature')

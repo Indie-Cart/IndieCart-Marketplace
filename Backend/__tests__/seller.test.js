@@ -27,7 +27,9 @@ describe('Seller API Endpoints', () => {
     };
 
     beforeEach(() => {
-        mockClient = new Pool().connect();
+        // Get a new mock client for each test
+        const pool = new Pool();
+        mockClient = pool.connect();
     });
 
     describe('POST /api/sellers', () => {
