@@ -1,7 +1,12 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth0 } from "@auth0/auth0-react";
 import './AboutPage.css';
 
 function AboutPage() {
+  const navigate = useNavigate();
+  const { loginWithRedirect, isAuthenticated } = useAuth0();
+
   return (
     <main className="about-page">
       <section className="about-hero">
@@ -80,8 +85,24 @@ function AboutPage() {
               appreciates unique, handmade items, IndieCart is the place for you.
             </p>
             <div className="cta-buttons">
-              <button className="get-started-btn">Browse Projects</button>
-              <button className="selling-btn">Start Selling</button>
+              <button
+                className="get-started-btn"
+                onClick={() => navigate('/products')}
+              >
+                Browse Projects
+              </button>
+              <button
+                className="selling-btn"
+                onClick={() => {
+                  if (isAuthenticated) {
+                    navigate('/seller-dashboard');
+                  } else {
+                    loginWithRedirect();
+                  }
+                }}
+              >
+                Start Selling
+              </button>
             </div>
           </section>
         </div>
