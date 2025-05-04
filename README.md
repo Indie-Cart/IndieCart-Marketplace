@@ -45,9 +45,9 @@ npm start
 ```
 ## 🧪 Testing
 - Backend tests implemented using Jest
-- Continuous Integration through GitHub Actions
 - Automated test runs on push and pull requests to main
-
+- Go to Github actions, Node.js CI, Choost last test, test (18.x), expand "run tests" scroll down to see coverage
+![Code Coverage](https://img.shields.io/badge/coverage-61.38%25-brightgreen)
 
 ## 🎯 Future Roadmap
 
