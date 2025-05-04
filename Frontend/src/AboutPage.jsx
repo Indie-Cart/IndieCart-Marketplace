@@ -16,9 +16,9 @@ function AboutPage() {
           <section className="mission-section">
             <h2>Our Mission</h2>
             <p>
-              IndieCart was born from a simple idea: to create a platform where independent creators 
-              can showcase their unique DIY projects and connect with people who appreciate handmade, 
-              one-of-a-kind items. We believe in supporting local artisans and fostering a community 
+              IndieCart was born from a simple idea: to create a platform where independent creators
+              can showcase their unique DIY projects and connect with people who appreciate handmade,
+              one-of-a-kind items. We believe in supporting local artisans and fostering a community
               of creativity and innovation.
             </p>
           </section>
@@ -28,7 +28,7 @@ function AboutPage() {
               <div className="feature-icon">🎨</div>
               <h3>For Creators</h3>
               <p>
-                A platform to showcase your unique creations, reach a wider audience, 
+                A platform to showcase your unique creations, reach a wider audience,
                 and turn your passion into a sustainable business.
               </p>
             </div>
@@ -36,7 +36,7 @@ function AboutPage() {
               <div className="feature-icon">🛍️</div>
               <h3>For Buyers</h3>
               <p>
-                Discover unique, handmade items that tell a story. Support independent 
+                Discover unique, handmade items that tell a story. Support independent
                 creators and find one-of-a-kind pieces for your home or as gifts.
               </p>
             </div>
@@ -44,8 +44,8 @@ function AboutPage() {
               <div className="feature-icon">🤝</div>
               <h3>For Community</h3>
               <p>
-                Join a vibrant community of makers and enthusiasts. Share ideas, 
-                learn new skills, and be part of a movement that values creativity 
+                Join a vibrant community of makers and enthusiasts. Share ideas,
+                learn new skills, and be part of a movement that values creativity
                 and craftsmanship.
               </p>
             </div>
@@ -76,12 +76,12 @@ function AboutPage() {
           <section className="cta-section">
             <h2>Join Our Community</h2>
             <p>
-              Whether you're a creator looking to showcase your work or someone who 
+              Whether you're a creator looking to showcase your work or someone who
               appreciates unique, handmade items, IndieCart is the place for you.
             </p>
             <div className="cta-buttons">
-              <button className="primary-btn">Start Selling</button>
-              <button className="secondary-btn">Browse Projects</button>
+              <button className="get-started-btn">Browse Projects</button>
+              <button className="selling-btn">Start Selling</button>
             </div>
           </section>
         </div>

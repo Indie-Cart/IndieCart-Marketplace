@@ -1,5 +1,5 @@
 .about-page {
-  padding-top: 4rem;
+  padding-top: 0rem;
 }
 
 .about-hero {
@@ -120,6 +120,24 @@
   margin-right: auto;
 }
 
+.selling-btn {
+  padding: 1rem 2rem;
+  border-radius: 50px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.selling-btn {
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+}
+
+.selling-btn:hover {
+  transform: translateY(-2px);
+}
+
 .cta-buttons {
   display: flex;
   gap: 1rem;
@@ -145,4 +163,4 @@
     flex-direction: column;
     align-items: center;
   }
-} 
+}
