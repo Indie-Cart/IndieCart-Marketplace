@@ -142,7 +142,13 @@ function HomePage() {
         <section className="container">
           <h2>Ready to Start Your Creative Journey?</h2>
           <p>Join our community of makers and share your unique creations with the world</p>
-          <button onClick={() => loginWithRedirect()} className="primary-btn">Get Started</button>
+          <button onClick={() => {
+            if (isAuthenticated) {
+              navigate('/seller-dashboard');
+            } else {
+              loginWithRedirect();
+            }
+          }} className="primary-btn">Get Started</button>
         </section>
       </section>
     </main>
