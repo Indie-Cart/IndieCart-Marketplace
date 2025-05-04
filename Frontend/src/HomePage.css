@@ -341,7 +341,6 @@ nav a.active {
 
 .view-all-btn:hover {
   transform: translateY(-2px);
-  background-color: var(--secondary-color);
 }
 
 /* Responsive Design */
@@ -380,4 +379,19 @@ nav a.active {
   .product-image {
     height: 200px;
   }
+}
+
+.get-started-btn {
+  background-color: var(--primary-color);
+  color: var(--white);
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 50px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+.get-started-btn:hover {
+  transform: translateY(-2px);
 }

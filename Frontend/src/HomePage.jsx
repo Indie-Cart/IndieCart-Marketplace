@@ -148,7 +148,7 @@ function HomePage() {
             } else {
               loginWithRedirect();
             }
-          }} className="primary-btn">Get Started</button>
+          }} className="get-started-btn">Get Started</button>
         </section>
       </section>
     </main>
