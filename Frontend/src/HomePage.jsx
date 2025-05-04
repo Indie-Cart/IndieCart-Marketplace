@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import './HomePage.css';
 import { useAuth0 } from "@auth0/auth0-react";
 
-// Determine API URL based on environment
+// Determine API URL based on environment./
 const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:8080'
   : 'https://indiecart-dwgnhtdnh9fvashy.eastus-01.azurewebsites.net';
