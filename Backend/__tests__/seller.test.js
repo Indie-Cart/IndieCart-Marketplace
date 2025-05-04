@@ -21,23 +21,32 @@ jest.mock('pg', () => {
 
 describe('Seller API Endpoints', () => {
     let mockClient;
+    let mockQuery;
     const mockSeller = {
         seller_id: 'test-seller-id',
         shop_name: 'Test Shop'
     };
 
     beforeEach(() => {
-        // Get a new mock client for each test
+        // Create a new mock query function for each test
+        mockQuery = jest.fn();
+        const mockRelease = jest.fn();
+        mockClient = {
+            query: mockQuery,
+            release: mockRelease
+        };
+        
+        // Update the pool's connect to return our mock client
         const pool = new Pool();
-        mockClient = pool.connect();
+        pool.connect.mockResolvedValue(mockClient);
     });
 
     describe('POST /api/sellers', () => {
         it('should successfully register a new seller', async () => {
             // Mock the seller check query
-            mockClient.query.mockResolvedValueOnce({ rows: [] });
+            mockQuery.mockResolvedValueOnce({ rows: [] });
             // Mock the insert query
-            mockClient.query.mockResolvedValueOnce({ rows: [] });
+            mockQuery.mockResolvedValueOnce({ rows: [] });
 
             const response = await request(app)
                 .post('/api/sellers')
@@ -45,12 +54,12 @@ describe('Seller API Endpoints', () => {
 
             expect(response.status).toBe(201);
             expect(response.body).toEqual({ message: 'Successfully registered as a seller' });
-            expect(mockClient.query).toHaveBeenCalledTimes(2);
+            expect(mockQuery).toHaveBeenCalledTimes(2);
         });
 
         it('should return 400 if seller already exists', async () => {
             // Mock the seller check query to return existing seller
-            mockClient.query.mockResolvedValueOnce({ rows: [{ seller_id: mockSeller.seller_id }] });
+            mockQuery.mockResolvedValueOnce({ rows: [{ seller_id: mockSeller.seller_id }] });
 
             const response = await request(app)
                 .post('/api/sellers')
@@ -58,7 +67,7 @@ describe('Seller API Endpoints', () => {
 
             expect(response.status).toBe(400);
             expect(response.body).toEqual({ error: 'You are already registered as a seller' });
-            expect(mockClient.query).toHaveBeenCalledTimes(1);
+            expect(mockQuery).toHaveBeenCalledTimes(1);
         });
 
         it('should return 400 if required fields are missing', async () => {
@@ -85,7 +94,7 @@ describe('Seller API Endpoints', () => {
             ];
 
             // Mock seller check query
-            mockClient.query.mockResolvedValueOnce({
+            mockQuery.mockResolvedValueOnce({
                 rows: [{
                     seller_id: mockSeller.seller_id,
                     shop_name: mockSeller.shop_name,
@@ -94,7 +103,7 @@ describe('Seller API Endpoints', () => {
             });
 
             // Mock products query
-            mockClient.query.mockResolvedValueOnce({
+            mockQuery.mockResolvedValueOnce({
                 rows: mockProducts
             });
 
@@ -124,7 +133,7 @@ describe('Seller API Endpoints', () => {
 
         it('should return 404 if user is not a seller', async () => {
             // Mock seller check query to return no results
-            mockClient.query.mockResolvedValueOnce({ rows: [] });
+            mockQuery.mockResolvedValueOnce({ rows: [] });
 
             const response = await request(app)
                 .get(`/api/seller/check/${mockSeller.seller_id}`);
