@@ -146,11 +146,15 @@ app.post('/api/products', upload.single('image'), async (req, res) => {
             });
         }
 
+        // Parse price and stock as numbers
+        const parsedPrice = parseFloat(price);
+        const parsedStock = parseInt(stock, 10);
+
         const result = await client.query(
             `INSERT INTO products (seller_id, title, description, price, stock, image)
              VALUES ($1, $2, $3, $4, $5, $6)
              RETURNING *`,
-            [seller_id, title, description, price, stock, req.file ? req.file.buffer : null]
+            [seller_id, title, description, parsedPrice, parsedStock, req.file ? req.file.buffer : null]
         );
 
         client.release();
@@ -443,6 +447,7 @@ app.delete('/api/products/:productId', async (req, res) => {
 
 // API endpoint to add item to cart
 app.post('/api/cart/add', async (req, res) => {
+    const client = await pool.connect();
     try {
         const { productId, quantity } = req.body;
         const buyerId = req.headers['x-user-id'];
@@ -455,8 +460,6 @@ app.post('/api/cart/add', async (req, res) => {
             return res.status(400).json({ error: 'Product ID and quantity are required' });
         }
 
-        const client = await pool.connect();
-
         // Start a transaction
         await client.query('BEGIN');
 
@@ -468,12 +471,14 @@ app.post('/api/cart/add', async (req, res) => {
             );
 
             if (productResult.rows.length === 0) {
-                throw new Error('Product not found');
+                await client.query('ROLLBACK');
+                return res.status(400).json({ error: 'Product not found' });
             }
 
             const currentStock = productResult.rows[0].stock;
             if (currentStock < quantity) {
-                throw new Error('Not enough stock available');
+                await client.query('ROLLBACK');
+                return res.status(400).json({ error: 'Not enough stock available' });
             }
 
             // Check if buyer has an active cart
@@ -505,7 +510,8 @@ app.post('/api/cart/add', async (req, res) => {
                 // Update existing item quantity
                 const newQuantity = existingItemResult.rows[0].quantity + quantity;
                 if (newQuantity > currentStock) {
-                    throw new Error('Not enough stock available for the total quantity');
+                    await client.query('ROLLBACK');
+                    return res.status(400).json({ error: 'Not enough stock available for the total quantity' });
                 }
 
                 await client.query(
@@ -531,12 +537,12 @@ app.post('/api/cart/add', async (req, res) => {
         } catch (err) {
             await client.query('ROLLBACK');
             throw err;
-        } finally {
-            client.release();
         }
     } catch (err) {
         console.error('Error adding item to cart:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Failed to add item to cart' });
+    } finally {
+        client.release();
     }
 });
 
@@ -583,6 +589,7 @@ app.get('/api/cart', async (req, res) => {
 
 // API endpoint to update cart item quantity
 app.put('/api/cart/update', async (req, res) => {
+    const client = await pool.connect();
     try {
         const { productId, quantity } = req.body;
         const buyerId = req.headers['x-user-id'];
@@ -594,8 +601,6 @@ app.put('/api/cart/update', async (req, res) => {
         if (!productId || !quantity) {
             return res.status(400).json({ error: 'Product ID and quantity are required' });
         }
-
-        const client = await pool.connect();
 
         // Start a transaction
         await client.query('BEGIN');
@@ -611,7 +616,8 @@ app.put('/api/cart/update', async (req, res) => {
             `, [buyerId, productId]);
 
             if (currentQuantityResult.rows.length === 0) {
-                throw new Error('Item not found in cart');
+                await client.query('ROLLBACK');
+                return res.status(400).json({ error: 'Item not found in cart' });
             }
 
             const currentQuantity = currentQuantityResult.rows[0].quantity;
@@ -619,7 +625,8 @@ app.put('/api/cart/update', async (req, res) => {
             const orderId = currentQuantityResult.rows[0].order_id;
 
             if (quantity > availableStock) {
-                throw new Error('Not enough stock available');
+                await client.query('ROLLBACK');
+                return res.status(400).json({ error: 'Not enough stock available' });
             }
 
             if (quantity <= 0) {
@@ -663,17 +670,18 @@ app.put('/api/cart/update', async (req, res) => {
         } catch (err) {
             await client.query('ROLLBACK');
             throw err;
-        } finally {
-            client.release();
         }
     } catch (err) {
         console.error('Error updating cart item:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Failed to update cart item' });
+    } finally {
+        client.release();
     }
 });
 
 // API endpoint to remove item from cart
 app.delete('/api/cart/remove', async (req, res) => {
+    const client = await pool.connect();
     try {
         const { productId } = req.body;
         const buyerId = req.headers['x-user-id'];
@@ -685,8 +693,6 @@ app.delete('/api/cart/remove', async (req, res) => {
         if (!productId) {
             return res.status(400).json({ error: 'Product ID is required' });
         }
-
-        const client = await pool.connect();
 
         // Start a transaction
         await client.query('BEGIN');
@@ -701,7 +707,8 @@ app.delete('/api/cart/remove', async (req, res) => {
             `, [buyerId, productId]);
 
             if (quantityResult.rows.length === 0) {
-                throw new Error('Item not found in cart');
+                await client.query('ROLLBACK');
+                return res.status(400).json({ error: 'Item not found in cart' });
             }
 
             const quantity = quantityResult.rows[0].quantity;
@@ -738,12 +745,12 @@ app.delete('/api/cart/remove', async (req, res) => {
         } catch (err) {
             await client.query('ROLLBACK');
             throw err;
-        } finally {
-            client.release();
         }
     } catch (err) {
         console.error('Error removing item from cart:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: 'Failed to remove item from cart' });
+    } finally {
+        client.release();
     }
 });
 
