@@ -26,9 +26,9 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 const pool = new Pool({
-    user: 'postgres.pjmkexdjtqpnfqcbakwp',
+    user: 'postgres.lyzdofwfiepznlcbxgxs',
     password: 'Indiecart123',
-    host: 'aws-0-us-east-1.pooler.supabase.com',
+    host: 'aws-0-eu-central-1.pooler.supabase.com',
     port: 6543,
     database: 'postgres',
     ssl: {
