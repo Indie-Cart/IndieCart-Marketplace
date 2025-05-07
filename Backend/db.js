@@ -10,7 +10,7 @@ const sql = postgres({
         rejectUnauthorized: false
     },
     // Connection settings
-    max: 1, // Use a single connection
+    max: 10, // Use a single connection
     idle_timeout: 20, // Close idle connections after 20 seconds
     connect_timeout: 10, // Connection timeout in seconds
     debug: process.env.NODE_ENV === 'development' // Enable debug logging in development
