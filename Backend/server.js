@@ -316,9 +316,8 @@ app.put('/api/products/:productId', async (req, res) => {
 app.delete('/api/products/:productId', async (req, res) => {
     try {
         const { productId } = req.params;
-        await sql`BEGIN`;
 
-        try {
+        await sql.begin(async (sql) => {
             // First check if product exists
             const productCheck = await sql`SELECT 1 FROM products WHERE product_id = ${productId}`;
 
@@ -331,15 +330,14 @@ app.delete('/api/products/:productId', async (req, res) => {
 
             // Then delete the product
             await sql`DELETE FROM products WHERE product_id = ${productId}`;
+        });
 
-            await sql`COMMIT`;
-            res.json({ message: 'Product deleted successfully' });
-        } catch (err) {
-            await sql`ROLLBACK`;
-            throw err;
-        }
+        res.json({ message: 'Product deleted successfully' });
     } catch (err) {
         console.error('Error deleting product:', err);
+        if (err.message === 'Product not found') {
+            return res.status(404).json({ error: err.message });
+        }
         res.status(500).json({
             error: 'Failed to delete product',
             details: err.message
@@ -361,21 +359,17 @@ app.post('/api/cart/add', async (req, res) => {
             return res.status(400).json({ error: 'Product ID and quantity are required' });
         }
 
-        await sql`BEGIN`;
-
-        try {
+        await sql.begin(async (sql) => {
             // Check if product exists and has enough stock
             const productResult = await sql`SELECT stock FROM products WHERE product_id = ${productId}`;
 
             if (productResult.length === 0) {
-                await sql`ROLLBACK`;
-                return res.status(400).json({ error: 'Product not found' });
+                throw new Error('Product not found');
             }
 
             const currentStock = productResult[0].stock;
             if (currentStock < quantity) {
-                await sql`ROLLBACK`;
-                return res.status(400).json({ error: 'Not enough stock available' });
+                throw new Error('Not enough stock available');
             }
 
             // Check if buyer has an active cart
@@ -398,8 +392,7 @@ app.post('/api/cart/add', async (req, res) => {
                 // Update existing item quantity
                 const newQuantity = existingItemResult[0].quantity + quantity;
                 if (newQuantity > currentStock) {
-                    await sql`ROLLBACK`;
-                    return res.status(400).json({ error: 'Not enough stock available for the total quantity' });
+                    throw new Error('Not enough stock available for the total quantity');
                 }
 
                 await sql`UPDATE order_products SET quantity = ${newQuantity} WHERE order_id = ${orderId} AND product_id = ${productId}`;
@@ -410,15 +403,17 @@ app.post('/api/cart/add', async (req, res) => {
 
             // Update product stock
             await sql`UPDATE products SET stock = stock - ${quantity} WHERE product_id = ${productId}`;
+        });
 
-            await sql`COMMIT`;
-            res.status(200).json({ message: 'Item added to cart successfully' });
-        } catch (err) {
-            await sql`ROLLBACK`;
-            throw err;
-        }
+        res.status(200).json({ message: 'Item added to cart successfully' });
     } catch (err) {
         console.error('Error adding item to cart:', err);
+        if (err.message === 'Product not found') {
+            return res.status(400).json({ error: err.message });
+        }
+        if (err.message === 'Not enough stock available' || err.message === 'Not enough stock available for the total quantity') {
+            return res.status(400).json({ error: err.message });
+        }
         res.status(500).json({ error: 'Failed to add item to cart' });
     }
 });
@@ -475,9 +470,7 @@ app.put('/api/cart/update', async (req, res) => {
             return res.status(400).json({ error: 'Product ID and quantity are required' });
         }
 
-        await sql`BEGIN`;
-
-        try {
+        await sql.begin(async (sql) => {
             // Get current cart item quantity and order_id
             const currentQuantityResult = await sql`
                 SELECT op.quantity, p.stock, o.order_id
@@ -487,8 +480,7 @@ app.put('/api/cart/update', async (req, res) => {
                 WHERE o.buyer_id = ${buyerId} AND o.status = 'cart' AND op.product_id = ${productId}`;
 
             if (currentQuantityResult.length === 0) {
-                await sql`ROLLBACK`;
-                return res.status(400).json({ error: 'Item not found in cart' });
+                throw new Error('Item not found in cart');
             }
 
             const currentQuantity = currentQuantityResult[0].quantity;
@@ -496,8 +488,7 @@ app.put('/api/cart/update', async (req, res) => {
             const orderId = currentQuantityResult[0].order_id;
 
             if (quantity > availableStock) {
-                await sql`ROLLBACK`;
-                return res.status(400).json({ error: 'Not enough stock available' });
+                throw new Error('Not enough stock available');
             }
 
             if (quantity <= 0) {
@@ -519,15 +510,17 @@ app.put('/api/cart/update', async (req, res) => {
             // Update product stock
             const stockDifference = currentQuantity - quantity;
             await sql`UPDATE products SET stock = stock + ${stockDifference} WHERE product_id = ${productId}`;
+        });
 
-            await sql`COMMIT`;
-            res.status(200).json({ message: 'Cart item updated successfully' });
-        } catch (err) {
-            await sql`ROLLBACK`;
-            throw err;
-        }
+        res.status(200).json({ message: 'Cart item updated successfully' });
     } catch (err) {
         console.error('Error updating cart item:', err);
+        if (err.message === 'Item not found in cart') {
+            return res.status(400).json({ error: err.message });
+        }
+        if (err.message === 'Not enough stock available') {
+            return res.status(400).json({ error: err.message });
+        }
         res.status(500).json({ error: 'Failed to update cart item' });
     }
 });
@@ -546,9 +539,7 @@ app.delete('/api/cart/remove', async (req, res) => {
             return res.status(400).json({ error: 'Product ID is required' });
         }
 
-        await sql`BEGIN`;
-
-        try {
+        await sql.begin(async (sql) => {
             // Get current cart item quantity and order_id
             const quantityResult = await sql`
                 SELECT op.quantity, o.order_id
@@ -557,8 +548,7 @@ app.delete('/api/cart/remove', async (req, res) => {
                 WHERE o.buyer_id = ${buyerId} AND o.status = 'cart' AND op.product_id = ${productId}`;
 
             if (quantityResult.length === 0) {
-                await sql`ROLLBACK`;
-                return res.status(400).json({ error: 'Item not found in cart' });
+                throw new Error('Item not found in cart');
             }
 
             const quantity = quantityResult[0].quantity;
@@ -577,15 +567,14 @@ app.delete('/api/cart/remove', async (req, res) => {
 
             // Update product stock
             await sql`UPDATE products SET stock = stock + ${quantity} WHERE product_id = ${productId}`;
+        });
 
-            await sql`COMMIT`;
-            res.status(200).json({ message: 'Item removed from cart successfully' });
-        } catch (err) {
-            await sql`ROLLBACK`;
-            throw err;
-        }
+        res.status(200).json({ message: 'Item removed from cart successfully' });
     } catch (err) {
         console.error('Error removing item from cart:', err);
+        if (err.message === 'Item not found in cart') {
+            return res.status(400).json({ error: err.message });
+        }
         res.status(500).json({ error: 'Failed to remove item from cart' });
     }
 });
