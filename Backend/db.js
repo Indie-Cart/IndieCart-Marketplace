@@ -9,11 +9,13 @@ const sql = postgres({
     ssl: {
         rejectUnauthorized: false
     },
-    // Connection settings
-    max: 10, // Use a single connection
+    // Connection pool settings
+    max: 10, // Maximum number of connections in the pool
     idle_timeout: 20, // Close idle connections after 20 seconds
     connect_timeout: 10, // Connection timeout in seconds
-    debug: process.env.NODE_ENV === 'development' // Enable debug logging in development
+    // Statement timeout settings
+    statement_timeout: 30000, // 30 seconds in milliseconds
+    query_timeout: 30000, // 30 seconds in milliseconds
 });
 
-module.exports = sql; 
+module.exports = sql;
