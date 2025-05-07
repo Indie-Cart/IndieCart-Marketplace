@@ -665,10 +665,17 @@ app.get('/tshirt', (req, res) => {
     })
 })
 
+// Serve static files from the React app
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
-app.get('/*splat', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'))
+// Handle React routing, return all requests to React app
+app.get('*', (req, res) => {
+    // Don't handle API routes
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    
+    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
 // API endpoint to update buyer shipping details
