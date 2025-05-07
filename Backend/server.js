@@ -1,11 +1,11 @@
 const express = require('express');
 const app = express();
-const { Pool } = require('pg');
 const path = require('path');
 const multer = require('multer');
 const cors = require('cors');
 const PORT = process.env.PORT || 8080;
 const stripe = require('stripe')('sk_test_51RKJnzCSe9LtgDWXmINjc7FwgUSuhRR9rD1dNsUs85urygKhT8TaTjx1pHBHBmHEgROiYmPP0fX811lYgClN5TaW00vuKBReu5');
+const sql = require('./db.js');
 
 // Configure multer for memory storage
 const upload = multer({ storage: multer.memoryStorage() });
@@ -25,27 +25,11 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-const pool = new Pool({
-    user: 'postgres.lyzdofwfiepznlcbxgxs',
-    password: 'Indiecart123',
-    host: 'aws-0-eu-central-1.pooler.supabase.com',
-    port: 6543,
-    database: 'postgres',
-    ssl: {
-        rejectUnauthorized: false
-    },
-    // Session pooler settings
-    max: 20, // Maximum number of clients in the pool
-    idleTimeoutMillis: 30000, // How long a client is allowed to remain idle before being closed
-    connectionTimeoutMillis: 2000 // How long to wait for a connection to be established
-});
-
+// Test database connection
 async function testDbConnection() {
     try {
-        const client = await pool.connect();
-        const result = await client.query('SELECT 1 AS result');
-        console.log("✅ DB Connected! Result:", result.rows);
-        client.release();
+        const result = await sql`SELECT 1 AS result`;
+        console.log("✅ DB Connected! Result:", result);
     } catch (err) {
         console.error("❌ DB Connection failed:", err.message);
     }
@@ -65,21 +49,11 @@ const validateUser = async (req, res, next) => {
     }
 
     try {
-        const client = await pool.connect();
-        const result = await client.query(
-            'SELECT 1 FROM buyer WHERE buyer_id = $1',
-            [userId]
-        );
-        client.release();
+        const result = await sql`SELECT 1 FROM buyer WHERE buyer_id = ${userId}`;
 
-        if (result.rows.length === 0) {
+        if (result.length === 0) {
             // Create buyer if they don't exist
-            const client2 = await pool.connect();
-            await client2.query(
-                'INSERT INTO buyer (buyer_id) VALUES ($1)',
-                [userId]
-            );
-            client2.release();
+            await sql`INSERT INTO buyer (buyer_id) VALUES (${userId})`;
         }
 
         next();
@@ -101,12 +75,7 @@ app.post('/api/buyers', async (req, res) => {
             return res.status(400).json({ error: 'Buyer ID is required' });
         }
 
-        const client = await pool.connect();
-        const result = await client.query(
-            'INSERT INTO buyer (buyer_id) VALUES ($1)',
-            [buyer_id]
-        );
-        client.release();
+        await sql`INSERT INTO buyer (buyer_id) VALUES (${buyer_id})`;
 
         res.status(200).json({ message: 'Buyer added successfully' });
     } catch (error) {
@@ -130,16 +99,10 @@ app.post('/api/products', upload.single('image'), async (req, res) => {
             });
         }
 
-        const client = await pool.connect();
-
         // First check if seller exists
-        const sellerCheck = await client.query(
-            'SELECT 1 FROM seller WHERE seller_id = $1',
-            [seller_id]
-        );
+        const sellerCheck = await sql`SELECT 1 FROM seller WHERE seller_id = ${seller_id}`;
 
-        if (sellerCheck.rows.length === 0) {
-            client.release();
+        if (sellerCheck.length === 0) {
             return res.status(400).json({
                 error: 'Seller not found',
                 message: 'Please register as a seller first before adding products'
@@ -150,18 +113,15 @@ app.post('/api/products', upload.single('image'), async (req, res) => {
         const parsedPrice = parseFloat(price);
         const parsedStock = parseInt(stock, 10);
 
-        const result = await client.query(
-            `INSERT INTO products (seller_id, title, description, price, stock, image)
-             VALUES ($1, $2, $3, $4, $5, $6)
-             RETURNING *`,
-            [seller_id, title, description, parsedPrice, parsedStock, req.file ? req.file.buffer : null]
-        );
+        const result = await sql`
+            INSERT INTO products (seller_id, title, description, price, stock, image)
+            VALUES (${seller_id}, ${title}, ${description}, ${parsedPrice}, ${parsedStock}, ${req.file ? req.file.buffer : null})
+            RETURNING *`;
 
-        client.release();
-        console.log('Product added successfully:', result.rows[0]);
+        console.log('Product added successfully:', result);
         res.status(201).json({
             message: 'Product added successfully',
-            product: result.rows[0]
+            product: result
         });
     } catch (err) {
         console.error('Error adding product:', err);
@@ -175,16 +135,15 @@ app.post('/api/products', upload.single('image'), async (req, res) => {
 // API endpoint to get all products
 app.get('/api/products', async (req, res) => {
     try {
-        const client = await pool.connect();
-        const result = await client.query(`
+        const products = await sql`
             SELECT p.product_id, p.seller_id, p.title, p.description, p.price, p.stock, p.image, s.shop_name
             FROM products p
             LEFT JOIN seller s ON p.seller_id = s.seller_id
             ORDER BY p.product_id DESC
-        `);
+        `;
 
         // Convert binary image data to base64
-        const productsWithImages = result.rows.map(product => {
+        const productsWithImages = products.map(product => {
             if (product.image) {
                 const base64Image = Buffer.from(product.image).toString('base64');
                 product.image = `data:image/jpeg;base64,${base64Image}`;
@@ -192,8 +151,6 @@ app.get('/api/products', async (req, res) => {
             return product;
         });
 
-        client.release();
-        console.log('Retrieved products:', productsWithImages);
         res.json(productsWithImages);
     } catch (err) {
         console.error('Error fetching products:', err);
@@ -205,25 +162,21 @@ app.get('/api/products', async (req, res) => {
 app.get('/api/products/:productId', async (req, res) => {
     try {
         const { productId } = req.params;
-        const client = await pool.connect();
-        const result = await client.query(`
+        const result = await sql`
             SELECT p.*, s.shop_name
             FROM products p
             LEFT JOIN seller s ON p.seller_id = s.seller_id
-            WHERE p.product_id = $1
-        `, [productId]);
+            WHERE p.product_id = ${productId}`;
 
-        if (result.rows.length === 0) {
-            client.release();
+        if (result.length === 0) {
             return res.status(404).json({ error: 'Product not found' });
         }
 
-        const product = result.rows[0];
+        const product = result[0];
         if (product.image) {
             product.image = `data:image/jpeg;base64,${Buffer.from(product.image).toString('base64')}`;
         }
 
-        client.release();
         res.json(product);
     } catch (err) {
         console.error('Error fetching product:', err);
@@ -235,22 +188,19 @@ app.get('/api/products/:productId', async (req, res) => {
 app.get('/api/products/seller/:shopName', async (req, res) => {
     try {
         const { shopName } = req.params;
-        const client = await pool.connect();
-        const result = await client.query(`
+        const result = await sql`
             SELECT p.product_id, p.seller_id, p.title, p.description, p.price, p.stock, p.image, s.shop_name
             FROM products p
             LEFT JOIN seller s ON p.seller_id = s.seller_id
-            WHERE s.shop_name = $1
-            ORDER BY p.product_id DESC
-        `, [shopName]);
+            WHERE s.shop_name = ${shopName}
+            ORDER BY p.product_id DESC`;
 
-        if (result.rows.length === 0) {
-            client.release();
+        if (result.length === 0) {
             return res.status(404).json({ error: 'No products found for this seller' });
         }
 
         // Convert binary image data to base64
-        const productsWithImages = result.rows.map(product => {
+        const productsWithImages = result.map(product => {
             if (product.image) {
                 const base64Image = Buffer.from(product.image).toString('base64');
                 product.image = `data:image/jpeg;base64,${base64Image}`;
@@ -258,7 +208,6 @@ app.get('/api/products/seller/:shopName', async (req, res) => {
             return product;
         });
 
-        client.release();
         res.json(productsWithImages);
     } catch (err) {
         console.error('Error fetching seller products:', err);
@@ -275,25 +224,15 @@ app.post('/api/sellers', async (req, res) => {
             return res.status(400).json({ error: 'Seller ID and shop name are required' });
         }
 
-        const client = await pool.connect();
-
         // First check if seller already exists
-        const sellerCheck = await client.query(
-            'SELECT 1 FROM seller WHERE seller_id = $1',
-            [seller_id]
-        );
+        const sellerCheck = await sql`SELECT 1 FROM seller WHERE seller_id = ${seller_id}`;
 
-        if (sellerCheck.rows.length > 0) {
-            client.release();
+        if (sellerCheck.length > 0) {
             return res.status(400).json({ error: 'You are already registered as a seller' });
         }
 
-        await client.query(
-            'INSERT INTO seller (seller_id, shop_name) VALUES ($1, $2)',
-            [seller_id, shop_name]
-        );
+        await sql`INSERT INTO seller (seller_id, shop_name) VALUES (${seller_id}, ${shop_name})`;
 
-        client.release();
         res.status(201).json({ message: 'Successfully registered as a seller' });
     } catch (error) {
         console.error('Error adding seller:', error);
@@ -305,41 +244,34 @@ app.post('/api/sellers', async (req, res) => {
 app.get('/api/seller/check/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
-        const client = await pool.connect();
-
-        // Check if user is a seller
-        const sellerCheck = await client.query(`
+        const result = await sql`
             SELECT s.seller_id, s.shop_name, 
                    (SELECT COUNT(*) FROM products p WHERE p.seller_id = s.seller_id) as product_count
             FROM seller s
-            WHERE s.seller_id = $1
-        `, [userId]);
+            WHERE s.seller_id = ${userId}`;
 
-        if (sellerCheck.rows.length === 0) {
-            client.release();
+        if (result.length === 0) {
             return res.status(404).json({ isSeller: false });
         }
 
         // Get seller's products
-        const productsResult = await client.query(`
+        const productsResult = await sql`
             SELECT p.product_id, p.title, p.description, p.price, p.stock, p.image
             FROM products p
-            WHERE p.seller_id = $1
-            ORDER BY p.product_id DESC
-        `, [userId]);
+            WHERE p.seller_id = ${userId}
+            ORDER BY p.product_id DESC`;
 
         // Convert binary image data to base64
-        const productsWithImages = productsResult.rows.map(product => {
+        const productsWithImages = productsResult.map(product => {
             if (product.image) {
                 product.image = `data:image/jpeg;base64,${Buffer.from(product.image).toString('base64')}`;
             }
             return product;
         });
 
-        client.release();
         res.json({
             isSeller: true,
-            sellerInfo: sellerCheck.rows[0],
+            sellerInfo: result[0],
             products: productsWithImages
         });
     } catch (error) {
@@ -361,31 +293,15 @@ app.put('/api/products/:productId', async (req, res) => {
             });
         }
 
-        const client = await pool.connect();
+        const result = await sql`
+            UPDATE products 
+            SET title = ${title}, description = ${description}, price = ${price}, stock = ${stock}
+            WHERE product_id = ${productId}
+            RETURNING *`;
 
-        // First check if product exists
-        const productCheck = await client.query(
-            'SELECT 1 FROM products WHERE product_id = $1',
-            [productId]
-        );
-
-        if (productCheck.rows.length === 0) {
-            client.release();
-            return res.status(404).json({ error: 'Product not found' });
-        }
-
-        const result = await client.query(
-            `UPDATE products 
-             SET title = $1, description = $2, price = $3, stock = $4
-             WHERE product_id = $5
-             RETURNING *`,
-            [title, description, price, stock, productId]
-        );
-
-        client.release();
         res.json({
             message: 'Product updated successfully',
-            product: result.rows[0]
+            product: result
         });
     } catch (err) {
         console.error('Error updating product:', err);
@@ -400,41 +316,27 @@ app.put('/api/products/:productId', async (req, res) => {
 app.delete('/api/products/:productId', async (req, res) => {
     try {
         const { productId } = req.params;
-        const client = await pool.connect();
-
-        // Start a transaction
-        await client.query('BEGIN');
+        await sql`BEGIN`;
 
         try {
             // First check if product exists
-            const productCheck = await client.query(
-                'SELECT 1 FROM products WHERE product_id = $1',
-                [productId]
-            );
+            const productCheck = await sql`SELECT 1 FROM products WHERE product_id = ${productId}`;
 
-            if (productCheck.rows.length === 0) {
+            if (productCheck.length === 0) {
                 throw new Error('Product not found');
             }
 
             // Delete from order_products first (due to foreign key constraint)
-            await client.query(
-                'DELETE FROM order_products WHERE product_id = $1',
-                [productId]
-            );
+            await sql`DELETE FROM order_products WHERE product_id = ${productId}`;
 
             // Then delete the product
-            await client.query(
-                'DELETE FROM products WHERE product_id = $1',
-                [productId]
-            );
+            await sql`DELETE FROM products WHERE product_id = ${productId}`;
 
-            await client.query('COMMIT');
+            await sql`COMMIT`;
             res.json({ message: 'Product deleted successfully' });
         } catch (err) {
-            await client.query('ROLLBACK');
+            await sql`ROLLBACK`;
             throw err;
-        } finally {
-            client.release();
         }
     } catch (err) {
         console.error('Error deleting product:', err);
@@ -447,7 +349,6 @@ app.delete('/api/products/:productId', async (req, res) => {
 
 // API endpoint to add item to cart
 app.post('/api/cart/add', async (req, res) => {
-    const client = await pool.connect();
     try {
         const { productId, quantity } = req.body;
         const buyerId = req.headers['x-user-id'];
@@ -460,89 +361,65 @@ app.post('/api/cart/add', async (req, res) => {
             return res.status(400).json({ error: 'Product ID and quantity are required' });
         }
 
-        // Start a transaction
-        await client.query('BEGIN');
+        await sql`BEGIN`;
 
         try {
             // Check if product exists and has enough stock
-            const productResult = await client.query(
-                'SELECT stock FROM products WHERE product_id = $1',
-                [productId]
-            );
+            const productResult = await sql`SELECT stock FROM products WHERE product_id = ${productId}`;
 
-            if (productResult.rows.length === 0) {
-                await client.query('ROLLBACK');
+            if (productResult.length === 0) {
+                await sql`ROLLBACK`;
                 return res.status(400).json({ error: 'Product not found' });
             }
 
-            const currentStock = productResult.rows[0].stock;
+            const currentStock = productResult[0].stock;
             if (currentStock < quantity) {
-                await client.query('ROLLBACK');
+                await sql`ROLLBACK`;
                 return res.status(400).json({ error: 'Not enough stock available' });
             }
 
             // Check if buyer has an active cart
-            let orderResult = await client.query(
-                'SELECT order_id FROM "order" WHERE buyer_id = $1 AND status = $2',
-                [buyerId, 'cart']
-            );
+            let orderResult = await sql`SELECT order_id FROM "order" WHERE buyer_id = ${buyerId} AND status = 'cart'`;
 
             let orderId;
 
-            if (orderResult.rows.length === 0) {
+            if (orderResult.length === 0) {
                 // Create new cart order
-                const newOrderResult = await client.query(
-                    'INSERT INTO "order" (buyer_id, status) VALUES ($1, $2) RETURNING order_id',
-                    [buyerId, 'cart']
-                );
-                orderId = newOrderResult.rows[0].order_id;
+                const newOrderResult = await sql`INSERT INTO "order" (buyer_id, status) VALUES (${buyerId}, 'cart') RETURNING order_id`;
+                orderId = newOrderResult[0].order_id;
             } else {
-                orderId = orderResult.rows[0].order_id;
+                orderId = orderResult[0].order_id;
             }
 
             // Check if product is already in cart
-            const existingItemResult = await client.query(
-                'SELECT quantity FROM order_products WHERE order_id = $1 AND product_id = $2',
-                [orderId, productId]
-            );
+            const existingItemResult = await sql`SELECT quantity FROM order_products WHERE order_id = ${orderId} AND product_id = ${productId}`;
 
-            if (existingItemResult.rows.length > 0) {
+            if (existingItemResult.length > 0) {
                 // Update existing item quantity
-                const newQuantity = existingItemResult.rows[0].quantity + quantity;
+                const newQuantity = existingItemResult[0].quantity + quantity;
                 if (newQuantity > currentStock) {
-                    await client.query('ROLLBACK');
+                    await sql`ROLLBACK`;
                     return res.status(400).json({ error: 'Not enough stock available for the total quantity' });
                 }
 
-                await client.query(
-                    'UPDATE order_products SET quantity = $1 WHERE order_id = $2 AND product_id = $3',
-                    [newQuantity, orderId, productId]
-                );
+                await sql`UPDATE order_products SET quantity = ${newQuantity} WHERE order_id = ${orderId} AND product_id = ${productId}`;
             } else {
                 // Add new item to cart
-                await client.query(
-                    'INSERT INTO order_products (order_id, product_id, quantity) VALUES ($1, $2, $3)',
-                    [orderId, productId, quantity]
-                );
+                await sql`INSERT INTO order_products (order_id, product_id, quantity) VALUES (${orderId}, ${productId}, ${quantity})`;
             }
 
             // Update product stock
-            await client.query(
-                'UPDATE products SET stock = stock - $1 WHERE product_id = $2',
-                [quantity, productId]
-            );
+            await sql`UPDATE products SET stock = stock - ${quantity} WHERE product_id = ${productId}`;
 
-            await client.query('COMMIT');
+            await sql`COMMIT`;
             res.status(200).json({ message: 'Item added to cart successfully' });
         } catch (err) {
-            await client.query('ROLLBACK');
+            await sql`ROLLBACK`;
             throw err;
         }
     } catch (err) {
         console.error('Error adding item to cart:', err);
         res.status(500).json({ error: 'Failed to add item to cart' });
-    } finally {
-        client.release();
     }
 });
 
@@ -555,8 +432,7 @@ app.get('/api/cart', async (req, res) => {
             return res.status(401).json({ error: 'User not authenticated' });
         }
 
-        const client = await pool.connect();
-        const result = await client.query(`
+        const result = await sql`
             SELECT 
                 p.product_id,
                 p.title,
@@ -568,18 +444,16 @@ app.get('/api/cart', async (req, res) => {
             FROM "order" o
             JOIN order_products op ON o.order_id = op.order_id
             JOIN products p ON op.product_id = p.product_id
-            WHERE o.buyer_id = $1 AND o.status = 'cart'
-        `, [buyerId]);
+            WHERE o.buyer_id = ${buyerId} AND o.status = 'cart'`;
 
         // Convert binary image data to base64
-        const cartItems = result.rows.map(item => {
+        const cartItems = result.map(item => {
             if (item.image) {
                 item.image = `data:image/jpeg;base64,${Buffer.from(item.image).toString('base64')}`;
             }
             return item;
         });
 
-        client.release();
         res.json(cartItems);
     } catch (err) {
         console.error('Error fetching cart items:', err);
@@ -589,7 +463,6 @@ app.get('/api/cart', async (req, res) => {
 
 // API endpoint to update cart item quantity
 app.put('/api/cart/update', async (req, res) => {
-    const client = await pool.connect();
     try {
         const { productId, quantity } = req.body;
         const buyerId = req.headers['x-user-id'];
@@ -602,86 +475,65 @@ app.put('/api/cart/update', async (req, res) => {
             return res.status(400).json({ error: 'Product ID and quantity are required' });
         }
 
-        // Start a transaction
-        await client.query('BEGIN');
+        await sql`BEGIN`;
 
         try {
             // Get current cart item quantity and order_id
-            const currentQuantityResult = await client.query(`
+            const currentQuantityResult = await sql`
                 SELECT op.quantity, p.stock, o.order_id
                 FROM "order" o
                 JOIN order_products op ON o.order_id = op.order_id
                 JOIN products p ON op.product_id = p.product_id
-                WHERE o.buyer_id = $1 AND o.status = 'cart' AND op.product_id = $2
-            `, [buyerId, productId]);
+                WHERE o.buyer_id = ${buyerId} AND o.status = 'cart' AND op.product_id = ${productId}`;
 
-            if (currentQuantityResult.rows.length === 0) {
-                await client.query('ROLLBACK');
+            if (currentQuantityResult.length === 0) {
+                await sql`ROLLBACK`;
                 return res.status(400).json({ error: 'Item not found in cart' });
             }
 
-            const currentQuantity = currentQuantityResult.rows[0].quantity;
-            const availableStock = currentQuantityResult.rows[0].stock + currentQuantity;
-            const orderId = currentQuantityResult.rows[0].order_id;
+            const currentQuantity = currentQuantityResult[0].quantity;
+            const availableStock = currentQuantityResult[0].stock + currentQuantity;
+            const orderId = currentQuantityResult[0].order_id;
 
             if (quantity > availableStock) {
-                await client.query('ROLLBACK');
+                await sql`ROLLBACK`;
                 return res.status(400).json({ error: 'Not enough stock available' });
             }
 
             if (quantity <= 0) {
                 // Remove item from cart if quantity is 0 or negative
-                await client.query(`
-                    DELETE FROM order_products
-                    WHERE order_id = $1 AND product_id = $2
-                `, [orderId, productId]);
+                await sql`DELETE FROM order_products WHERE order_id = ${orderId} AND product_id = ${productId}`;
 
                 // Check if cart is empty
-                const remainingItems = await client.query(
-                    'SELECT COUNT(*) FROM order_products WHERE order_id = $1',
-                    [orderId]
-                );
+                const remainingItems = await sql`SELECT COUNT(*) FROM order_products WHERE order_id = ${orderId}`;
 
-                if (remainingItems.rows[0].count === '0') {
+                if (remainingItems[0].count === '0') {
                     // Delete the empty order
-                    await client.query(
-                        'DELETE FROM "order" WHERE order_id = $1',
-                        [orderId]
-                    );
+                    await sql`DELETE FROM "order" WHERE order_id = ${orderId}`;
                 }
             } else {
                 // Update cart item quantity
-                await client.query(`
-                    UPDATE order_products
-                    SET quantity = $1
-                    WHERE order_id = $2 AND product_id = $3
-                `, [quantity, orderId, productId]);
+                await sql`UPDATE order_products SET quantity = ${quantity} WHERE order_id = ${orderId} AND product_id = ${productId}`;
             }
 
             // Update product stock
             const stockDifference = currentQuantity - quantity;
-            await client.query(
-                'UPDATE products SET stock = stock + $1 WHERE product_id = $2',
-                [stockDifference, productId]
-            );
+            await sql`UPDATE products SET stock = stock + ${stockDifference} WHERE product_id = ${productId}`;
 
-            await client.query('COMMIT');
+            await sql`COMMIT`;
             res.status(200).json({ message: 'Cart item updated successfully' });
         } catch (err) {
-            await client.query('ROLLBACK');
+            await sql`ROLLBACK`;
             throw err;
         }
     } catch (err) {
         console.error('Error updating cart item:', err);
         res.status(500).json({ error: 'Failed to update cart item' });
-    } finally {
-        client.release();
     }
 });
 
 // API endpoint to remove item from cart
 app.delete('/api/cart/remove', async (req, res) => {
-    const client = await pool.connect();
     try {
         const { productId } = req.body;
         const buyerId = req.headers['x-user-id'];
@@ -694,63 +546,47 @@ app.delete('/api/cart/remove', async (req, res) => {
             return res.status(400).json({ error: 'Product ID is required' });
         }
 
-        // Start a transaction
-        await client.query('BEGIN');
+        await sql`BEGIN`;
 
         try {
             // Get current cart item quantity and order_id
-            const quantityResult = await client.query(`
+            const quantityResult = await sql`
                 SELECT op.quantity, o.order_id
                 FROM "order" o
                 JOIN order_products op ON o.order_id = op.order_id
-                WHERE o.buyer_id = $1 AND o.status = 'cart' AND op.product_id = $2
-            `, [buyerId, productId]);
+                WHERE o.buyer_id = ${buyerId} AND o.status = 'cart' AND op.product_id = ${productId}`;
 
-            if (quantityResult.rows.length === 0) {
-                await client.query('ROLLBACK');
+            if (quantityResult.length === 0) {
+                await sql`ROLLBACK`;
                 return res.status(400).json({ error: 'Item not found in cart' });
             }
 
-            const quantity = quantityResult.rows[0].quantity;
-            const orderId = quantityResult.rows[0].order_id;
+            const quantity = quantityResult[0].quantity;
+            const orderId = quantityResult[0].order_id;
 
             // Remove item from cart
-            await client.query(`
-                DELETE FROM order_products
-                WHERE order_id = $1 AND product_id = $2
-            `, [orderId, productId]);
+            await sql`DELETE FROM order_products WHERE order_id = ${orderId} AND product_id = ${productId}`;
 
             // Check if cart is empty
-            const remainingItems = await client.query(
-                'SELECT COUNT(*) FROM order_products WHERE order_id = $1',
-                [orderId]
-            );
+            const remainingItems = await sql`SELECT COUNT(*) FROM order_products WHERE order_id = ${orderId}`;
 
-            if (remainingItems.rows[0].count === '0') {
+            if (remainingItems[0].count === '0') {
                 // Delete the empty order
-                await client.query(
-                    'DELETE FROM "order" WHERE order_id = $1',
-                    [orderId]
-                );
+                await sql`DELETE FROM "order" WHERE order_id = ${orderId}`;
             }
 
             // Update product stock
-            await client.query(
-                'UPDATE products SET stock = stock + $1 WHERE product_id = $2',
-                [quantity, productId]
-            );
+            await sql`UPDATE products SET stock = stock + ${quantity} WHERE product_id = ${productId}`;
 
-            await client.query('COMMIT');
+            await sql`COMMIT`;
             res.status(200).json({ message: 'Item removed from cart successfully' });
         } catch (err) {
-            await client.query('ROLLBACK');
+            await sql`ROLLBACK`;
             throw err;
         }
     } catch (err) {
         console.error('Error removing item from cart:', err);
         res.status(500).json({ error: 'Failed to remove item from cart' });
-    } finally {
-        client.release();
     }
 });
 
@@ -811,15 +647,7 @@ app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, 
         const buyerId = session.metadata.buyerId;
 
         try {
-            const client = await pool.connect();
-            // Update order status from 'cart' to 'paid'
-            await client.query(
-                `UPDATE "order" 
-                 SET status = 'paid' 
-                 WHERE buyer_id = $1 AND status = 'cart'`,
-                [buyerId]
-            );
-            client.release();
+            await sql`UPDATE "order" SET status = 'paid' WHERE buyer_id = ${buyerId} AND status = 'cart'`;
         } catch (error) {
             console.error('Error updating order status:', error);
             return res.status(500).json({ error: 'Failed to update order status' });
@@ -853,20 +681,16 @@ app.put('/api/buyers/update', async (req, res) => {
             return res.status(401).json({ error: 'User not authenticated' });
         }
 
-        const client = await pool.connect();
-        const result = await client.query(
-            `UPDATE buyer 
-             SET shipping_address = $1, 
-                 suburb = $2, 
-                 city = $3, 
-                 province = $4, 
-                 postal_code = $5, 
-                 name = $6, 
-                 number = $7
-             WHERE buyer_id = $8`,
-            [shipping_address, suburb, city, province, postal_code, name, number, buyerId]
-        );
-        client.release();
+        await sql`
+            UPDATE buyer 
+            SET shipping_address = ${shipping_address}, 
+                suburb = ${suburb}, 
+                city = ${city}, 
+                province = ${province}, 
+                postal_code = ${postal_code}, 
+                name = ${name}, 
+                number = ${number}
+            WHERE buyer_id = ${buyerId}`;
 
         res.status(200).json({ message: 'Shipping details updated successfully' });
     } catch (error) {
@@ -884,26 +708,21 @@ app.get('/api/buyers/details', async (req, res) => {
             return res.status(401).json({ error: 'User not authenticated' });
         }
 
-        const client = await pool.connect();
-        const result = await client.query(
-            `SELECT shipping_address, suburb, city, province, postal_code, name, number
-             FROM buyer 
-             WHERE buyer_id = $1`,
-            [buyerId]
-        );
-        client.release();
+        const result = await sql`
+            SELECT shipping_address, suburb, city, province, postal_code, name, number
+            FROM buyer 
+            WHERE buyer_id = ${buyerId}`;
 
-        if (result.rows.length === 0) {
+        if (result.length === 0) {
             return res.status(404).json({ error: 'Buyer not found' });
         }
 
-        res.json(result.rows[0]);
+        res.json(result[0]);
     } catch (error) {
         console.error('Error fetching buyer details:', error);
         res.status(500).json({ error: 'Failed to fetch buyer details' });
     }
 });
-
 
 // Only start the server when running the file directly
 if (require.main === module) {
