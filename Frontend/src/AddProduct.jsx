@@ -18,6 +18,7 @@ const AddProduct = () => {
         image: null
     });
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -43,9 +44,11 @@ const AddProduct = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setIsLoading(true);
         
         if (!isAuthenticated || !user) {
             setError('Please log in to add products');
+            setIsLoading(false);
             return;
         }
 
@@ -84,6 +87,8 @@ const AddProduct = () => {
         } catch (error) {
             console.error('Error:', error);
             setError(error.message);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -105,6 +110,7 @@ const AddProduct = () => {
                         value={formData.title}
                         onChange={handleChange}
                         required
+                        disabled={isLoading}
                     />
                 </div>
 
@@ -116,6 +122,7 @@ const AddProduct = () => {
                         value={formData.description}
                         onChange={handleChange}
                         required
+                        disabled={isLoading}
                     />
                 </div>
 
@@ -129,6 +136,7 @@ const AddProduct = () => {
                         onChange={handleChange}
                         step="0.01"
                         required
+                        disabled={isLoading}
                     />
                 </div>
 
@@ -141,6 +149,7 @@ const AddProduct = () => {
                         value={formData.stock}
                         onChange={handleChange}
                         required
+                        disabled={isLoading}
                     />
                 </div>
 
@@ -153,10 +162,24 @@ const AddProduct = () => {
                         onChange={handleImageChange}
                         accept="image/*"
                         required
+                        disabled={isLoading}
                     />
                 </div>
 
-                <button type="submit" className="submit-btn">Add Product</button>
+                <button 
+                    type="submit" 
+                    className="submit-btn"
+                    disabled={isLoading}
+                >
+                    {isLoading ? (
+                        <div className="loading-spinner">
+                            <div className="spinner"></div>
+                            <span>Adding Product...</span>
+                        </div>
+                    ) : (
+                        'Add Product'
+                    )}
+                </button>
             </form>
         </div>
     );

@@ -11,6 +11,7 @@ function CartPage() {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [updatingItems, setUpdatingItems] = useState({});
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth0();
 
@@ -41,6 +42,7 @@ function CartPage() {
   };
 
   const updateQuantity = async (productId, newQuantity) => {
+    setUpdatingItems(prev => ({ ...prev, [productId]: true }));
     try {
       const response = await fetch(`${API_URL}/api/cart/update`, {
         method: 'PUT',
@@ -55,10 +57,13 @@ function CartPage() {
       await fetchCartItems();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setUpdatingItems(prev => ({ ...prev, [productId]: false }));
     }
   };
 
   const removeItem = async (productId) => {
+    setUpdatingItems(prev => ({ ...prev, [productId]: true }));
     try {
       const response = await fetch(`${API_URL}/api/cart/remove`, {
         method: 'DELETE',
@@ -73,6 +78,8 @@ function CartPage() {
       await fetchCartItems();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setUpdatingItems(prev => ({ ...prev, [productId]: false }));
     }
   };
 
@@ -112,23 +119,38 @@ function CartPage() {
                     <div className="quantity-controls">
                       <button
                         onClick={() => updateQuantity(item.product_id, item.quantity - 1)}
-                        disabled={item.quantity <= 1}
+                        disabled={item.quantity <= 1 || updatingItems[item.product_id]}
+                        className={updatingItems[item.product_id] ? 'loading' : ''}
                       >
-                        -
+                        {updatingItems[item.product_id] ? (
+                          <div className="spinner"></div>
+                        ) : (
+                          '-'
+                        )}
                       </button>
                       <span>{item.quantity}</span>
                       <button
                         onClick={() => updateQuantity(item.product_id, item.quantity + 1)}
-                        disabled={item.quantity >= item.stock}
+                        disabled={item.quantity >= item.stock || updatingItems[item.product_id]}
+                        className={updatingItems[item.product_id] ? 'loading' : ''}
                       >
-                        +
+                        {updatingItems[item.product_id] ? (
+                          <div className="spinner"></div>
+                        ) : (
+                          '+'
+                        )}
                       </button>
                     </div>
                     <button
-                      className="remove-btn"
+                      className={`remove-btn ${updatingItems[item.product_id] ? 'loading' : ''}`}
                       onClick={() => removeItem(item.product_id)}
+                      disabled={updatingItems[item.product_id]}
                     >
-                      Remove
+                      {updatingItems[item.product_id] ? (
+                        <div className="spinner"></div>
+                      ) : (
+                        'Remove'
+                      )}
                     </button>
                   </div>
                 </div>

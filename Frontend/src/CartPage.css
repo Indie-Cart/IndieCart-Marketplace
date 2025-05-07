@@ -67,21 +67,40 @@
 }
 
 .quantity-controls button {
-  width: 30px;
-  height: 30px;
+  padding: 0.5rem 1rem;
   border: 1px solid #ddd;
-  background: #f8f9fa;
-  border-radius: 4px;
+  background-color: #fff;
   cursor: pointer;
-  font-size: 1.2rem;
+  transition: all 0.2s;
+  min-width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+.quantity-controls button:hover:not(:disabled) {
+  background-color: #f0f0f0;
+}
+
 .quantity-controls button:disabled {
-  opacity: 0.5;
+  background-color: #f5f5f5;
   cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.quantity-controls button.loading {
+  background-color: #f5f5f5;
+  cursor: wait;
+}
+
+.quantity-controls .spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #666;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
 .quantity-controls span {
@@ -91,18 +110,50 @@
 }
 
 .remove-btn {
-  align-self: flex-start;
   padding: 0.5rem 1rem;
-  background: #dc3545;
+  background-color: #ff4444;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s;
+  min-width: 80px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.remove-btn:hover {
-  background: #c82333;
+.remove-btn:hover:not(:disabled) {
+  background-color: #cc0000;
+}
+
+.remove-btn:disabled {
+  background-color: #ffcccc;
+  cursor: not-allowed;
+}
+
+.remove-btn.loading {
+  background-color: #ffcccc;
+  cursor: wait;
+}
+
+.remove-btn .spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #ffffff;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .cart-summary {
