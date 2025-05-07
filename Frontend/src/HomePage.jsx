@@ -6,7 +6,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 // Determine API URL based on environment./
 const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:8080'
-  : 'https://indiecart-dwgnhtdnh9fvashy.eastus-01.azurewebsites.net';
+  : 'https://indiecartmarket-byhqamdkhngqhpbd.southafricanorth-01.azurewebsites.net/';
 
 function HomePage() {
   const { loginWithRedirect, logout, isAuthenticated, user } = useAuth0();

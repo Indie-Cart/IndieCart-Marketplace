@@ -5,7 +5,7 @@ import './CartPage.css';
 
 const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:8080'
-  : 'https://indiecart-dwgnhtdnh9fvashy.eastus-01.azurewebsites.net';
+  : 'https://indiecartmarket-byhqamdkhngqhpbd.southafricanorth-01.azurewebsites.net';
 
 function CartPage() {
   const [cartItems, setCartItems] = useState([]);

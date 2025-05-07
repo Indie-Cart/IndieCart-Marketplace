@@ -15,7 +15,7 @@ app.use(cors({
     origin: [
         'http://localhost:5173',
         'http://localhost:8080',
-        'https://indiecart-dwgnhtdnh9fvashy.eastus-01.azurewebsites.net',
+        'https://indiecartmarket-byhqamdkhngqhpbd.southafricanorth-01.azurewebsites.net',
         'https://indiecart.vercel.app'
     ],
     credentials: true
