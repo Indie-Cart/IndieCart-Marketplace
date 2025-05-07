@@ -665,18 +665,6 @@ app.get('/tshirt', (req, res) => {
     })
 })
 
-// Serve static files from the React app
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
-
-// Handle React routing, return all requests to React app
-app.get('*', (req, res) => {
-    // Don't handle API routes
-    if (req.path.startsWith('/api/')) {
-        return res.status(404).json({ error: 'API endpoint not found' });
-    }
-    
-    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
-});
 
 // API endpoint to update buyer shipping details
 app.put('/api/buyers/update', async (req, res) => {
@@ -737,5 +725,18 @@ if (require.main === module) {
         console.log(`It's alive on http://localhost:${PORT}`);
     });
 }
+
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
+// Handle React routing, return all requests to React app
+app.get('*', (req, res) => {
+    // Don't handle API routes
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    
+    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+});
 
 module.exports = app;
