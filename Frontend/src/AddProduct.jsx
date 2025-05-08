@@ -20,6 +20,7 @@ const AddProduct = () => {
     });
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [imagePreview, setImagePreview] = useState(null);
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -36,10 +37,16 @@ const AddProduct = () => {
     };
 
     const handleImageChange = (e) => {
-        setFormData(prev => ({
-            ...prev,
-            image: e.target.files[0]
-        }));
+        const file = e.target.files[0];
+        if (file) {
+            setFormData(prev => ({
+                ...prev,
+                image: file
+            }));
+            // Create preview URL
+            const previewUrl = URL.createObjectURL(file);
+            setImagePreview(previewUrl);
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -138,93 +145,154 @@ const AddProduct = () => {
     };
 
     if (!isAuthenticated) {
-        return <div className="add-product-container">Please log in to add products</div>;
+        return (
+            <div className="add-product-container">
+                <div className="auth-message">
+                    <h2>Authentication Required</h2>
+                    <p>Please log in to add products to your shop.</p>
+                </div>
+            </div>
+        );
     }
 
     return (
         <div className="add-product-container">
-            <h2>Add New Product</h2>
-            {error && <div className="error-message">{error}</div>}
+            <div className="form-header">
+                <h2>Add New Product</h2>
+                <p className="form-subtitle">Fill in the details below to list your product</p>
+            </div>
+
+            {error && (
+                <div className="error-message">
+                    <span className="error-icon">⚠️</span>
+                    {error}
+                </div>
+            )}
+
             <form onSubmit={handleSubmit} className="add-product-form">
-                <div className="form-group">
-                    <label htmlFor="title">Product Title:</label>
-                    <input
-                        type="text"
-                        id="title"
-                        name="title"
-                        value={formData.title}
-                        onChange={handleChange}
-                        required
-                        disabled={isLoading}
-                    />
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="description">Description:</label>
-                    <textarea
-                        id="description"
-                        name="description"
-                        value={formData.description}
-                        onChange={handleChange}
-                        required
-                        disabled={isLoading}
-                    />
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="price">Price:</label>
-                    <input
-                        type="number"
-                        id="price"
-                        name="price"
-                        value={formData.price}
-                        onChange={handleChange}
-                        step="0.01"
-                        required
-                        disabled={isLoading}
-                    />
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="stock">Stock:</label>
-                    <input
-                        type="number"
-                        id="stock"
-                        name="stock"
-                        value={formData.stock}
-                        onChange={handleChange}
-                        required
-                        disabled={isLoading}
-                    />
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="image">Product Image:</label>
-                    <input
-                        type="file"
-                        id="image"
-                        name="image"
-                        onChange={handleImageChange}
-                        accept="image/*"
-                        required
-                        disabled={isLoading}
-                    />
-                </div>
-
-                <button 
-                    type="submit" 
-                    className="submit-btn"
-                    disabled={isLoading}
-                >
-                    {isLoading ? (
-                        <div className="loading-spinner">
-                            <div className="spinner"></div>
-                            <span>Adding Product...</span>
+                <div className="form-grid">
+                    <div className="form-main">
+                        <div className="form-group">
+                            <label htmlFor="title">Product Title</label>
+                            <input
+                                type="text"
+                                id="title"
+                                name="title"
+                                value={formData.title}
+                                onChange={handleChange}
+                                placeholder="Enter product title"
+                                required
+                                disabled={isLoading}
+                            />
                         </div>
-                    ) : (
-                        'Add Product'
-                    )}
-                </button>
+
+                        <div className="form-group">
+                            <label htmlFor="description">Description</label>
+                            <textarea
+                                id="description"
+                                name="description"
+                                value={formData.description}
+                                onChange={handleChange}
+                                placeholder="Describe your product in detail"
+                                required
+                                disabled={isLoading}
+                            />
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="price">Price (R)</label>
+                                <input
+                                    type="number"
+                                    id="price"
+                                    name="price"
+                                    value={formData.price}
+                                    onChange={handleChange}
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    required
+                                    disabled={isLoading}
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="stock">Stock</label>
+                                <input
+                                    type="number"
+                                    id="stock"
+                                    name="stock"
+                                    value={formData.stock}
+                                    onChange={handleChange}
+                                    placeholder="0"
+                                    required
+                                    disabled={isLoading}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="form-sidebar">
+                        <div className="form-group image-upload">
+                            <label htmlFor="image">Product Image</label>
+                            <div className="image-upload-container">
+                                {imagePreview ? (
+                                    <div className="image-preview">
+                                        <img src={imagePreview} alt="Preview" />
+                                        <button
+                                            type="button"
+                                            className="remove-image"
+                                            onClick={() => {
+                                                setImagePreview(null);
+                                                setFormData(prev => ({ ...prev, image: null }));
+                                            }}
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="upload-placeholder">
+                                        <div className="upload-zone">
+                                            <span className="upload-icon">📷</span>
+                                            <p>Click to upload image</p>
+                                            <input
+                                                type="file"
+                                                id="image"
+                                                accept="image/*"
+                                                onChange={handleImageChange}
+                                                disabled={isLoading}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="form-actions">
+                    <button
+                        type="button"
+                        className="cancel-btn"
+                        onClick={() => navigate('/seller-dashboard')}
+                        disabled={isLoading}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        className="submit-btn"
+                        disabled={isLoading}
+                    >
+                        {isLoading ? (
+                            <div className="loading-spinner">
+                                <div className="spinner"></div>
+                                <span>Adding Product...</span>
+                            </div>
+                        ) : (
+                            'Add Product'
+                        )}
+                    </button>
+                </div>
             </form>
         </div>
     );

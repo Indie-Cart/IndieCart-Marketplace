@@ -142,8 +142,14 @@ function EditProduct() {
   return (
     <main className="edit-product">
       <div className="container">
-        <h1>Edit Product</h1>
+        <div className="form-header">
+          <h1>Edit Product</h1>
+          <p className="form-subtitle">Update your product details below</p>
+        </div>
+
         {success && <div className="success-message">{success}</div>}
+        {error && <div className="error-message">{error}</div>}
+
         <form onSubmit={handleSubmit} className="edit-product-form">
           <div className="form-group">
             <label htmlFor="title">Product Title</label>
@@ -154,6 +160,7 @@ function EditProduct() {
               value={product.title}
               onChange={handleChange}
               required
+              disabled={loading}
             />
           </div>
 
@@ -165,43 +172,57 @@ function EditProduct() {
               value={product.description}
               onChange={handleChange}
               required
+              disabled={loading}
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="price">Price (R)</label>
-            <input
-              type="number"
-              id="price"
-              name="price"
-              value={product.price}
-              onChange={handleChange}
-              min="0"
-              step="0.01"
-              required
-            />
-          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="price">Price (R)</label>
+              <input
+                type="number"
+                id="price"
+                name="price"
+                value={product.price}
+                onChange={handleChange}
+                min="0"
+                step="0.01"
+                required
+                disabled={loading}
+              />
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="stock">Stock Count</label>
-            <input
-              type="number"
-              id="stock"
-              name="stock"
-              value={product.stock}
-              onChange={handleChange}
-              min="0"
-              required
-            />
+            <div className="form-group">
+              <label htmlFor="stock">Stock Count</label>
+              <input
+                type="number"
+                id="stock"
+                name="stock"
+                value={product.stock}
+                onChange={handleChange}
+                min="0"
+                required
+                disabled={loading}
+              />
+            </div>
           </div>
 
           <div className="form-actions">
-            <button type="submit" className="save-btn">Save Changes</button>
-            <button type="button" className="delete-btn" onClick={handleDelete}>
+            <button type="button" className="cancel-btn" onClick={() => navigate('/seller-dashboard')} disabled={loading}>
+              Cancel
+            </button>
+            <button type="button" className="delete-btn" onClick={handleDelete} disabled={loading}>
               Delete Product
             </button>
-            <button type="button" className="cancel-btn" onClick={() => navigate('/seller-dashboard')}>
-              Cancel
+            <button type="submit" className="save-btn" disabled={loading}>
+              {loading ? (
+                <div className="loading-spinner">
+                  <div className="spinner"></div>
+                  <span>Saving...</span>
+                </div>
+              ) : (
+                'Save Changes'
+              )}
             </button>
           </div>
         </form>
