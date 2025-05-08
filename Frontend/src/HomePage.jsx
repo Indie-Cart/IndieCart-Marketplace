@@ -90,7 +90,15 @@ function HomePage() {
                     </figure>
                     <section className="product-info">
                       <h3>{product.title}</h3>
-                      <p className="creator">by {product.shop_name}</p>
+                      <p className="creator">
+                        by{' '}
+                        <Link
+                          to={`/seller/${encodeURIComponent(product.shop_name || 'Unknown Shop')}`}
+                          className="seller-link"
+                        >
+                          {product.shop_name || 'Unknown Shop'}
+                        </Link>
+                      </p>
                       <section className="product-meta">
                         <span className="price">R{product.price}</span>
                         <span className="stock">Stock: {product.stock}</span>
