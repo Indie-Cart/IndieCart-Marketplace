@@ -8,7 +8,7 @@ const API_URL = window.location.hostname === 'localhost'
   : 'https://indiecartmarket-byhqamdkhngqhpbd.southafricanorth-01.azurewebsites.net';
 
 function SellerDashboard() {
-  const { isAuthenticated, user } = useAuth0();
+  const { isAuthenticated, user, isLoading: authLoading } = useAuth0();
   const navigate = useNavigate();
   const [sellerInfo, setSellerInfo] = useState(null);
   const [products, setProducts] = useState([]);
@@ -17,6 +17,11 @@ function SellerDashboard() {
 
   useEffect(() => {
     const fetchSellerData = async () => {
+      // Don't proceed if Auth0 is still loading
+      if (authLoading) {
+        return;
+      }
+
       if (!isAuthenticated || !user) {
         setError('Please log in to view seller dashboard');
         setLoading(false);
@@ -48,10 +53,15 @@ function SellerDashboard() {
     };
 
     fetchSellerData();
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, navigate, authLoading]);
+
+  // Show loading state while Auth0 is checking authentication
+  if (authLoading) {
+    return <div className="seller-dashboard loading">Loading...</div>;
+  }
 
   if (loading) {
-    return <div className="seller-dashboard loading">Loading...</div>;
+    return <div className="seller-dashboard loading">Loading seller data...</div>;
   }
 
   if (error) {

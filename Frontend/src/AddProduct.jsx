@@ -9,7 +9,7 @@ const API_URL = window.location.hostname === 'localhost'
   : 'https://indiecartmarket-byhqamdkhngqhpbd.southafricanorth-01.azurewebsites.net';
 
 const AddProduct = () => {
-    const { isAuthenticated, user } = useAuth0();
+    const { isAuthenticated, user, isLoading: authLoading } = useAuth0();
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         title: '',
@@ -23,10 +23,15 @@ const AddProduct = () => {
     const [imagePreview, setImagePreview] = useState(null);
 
     useEffect(() => {
+        // Don't redirect if Auth0 is still loading
+        if (authLoading) {
+            return;
+        }
+
         if (!isAuthenticated) {
             navigate('/');
         }
-    }, [isAuthenticated, navigate]);
+    }, [isAuthenticated, navigate, authLoading]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -144,6 +149,11 @@ const AddProduct = () => {
         }
     };
 
+    // Show loading state while Auth0 is checking authentication
+    if (authLoading) {
+        return <div className="add-product-container loading">Loading...</div>;
+    }
+
     if (!isAuthenticated) {
         return (
             <div className="add-product-container">
@@ -232,21 +242,22 @@ const AddProduct = () => {
                     </div>
 
                     <div className="form-sidebar">
-                        <div className="form-group image-upload">
-                            <label htmlFor="image">Product Image</label>
-                            <div className="image-upload-container">
+                        <div className="form-group">
+                            <label>Product Image</label>
+                            <div className="image-upload">
                                 {imagePreview ? (
                                     <div className="image-preview">
                                         <img src={imagePreview} alt="Preview" />
                                         <button
                                             type="button"
-                                            className="remove-image"
+                                            className="remove-image-btn"
                                             onClick={() => {
                                                 setImagePreview(null);
                                                 setFormData(prev => ({ ...prev, image: null }));
                                             }}
+                                            disabled={isLoading}
                                         >
-                                            Remove
+                                            Remove Image
                                         </button>
                                     </div>
                                 ) : (

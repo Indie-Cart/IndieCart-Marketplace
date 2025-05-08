@@ -10,7 +10,7 @@ const API_URL = window.location.hostname === 'localhost'
 function EditProduct() {
   const { productId } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth0();
+  const { isAuthenticated, user, isLoading: authLoading } = useAuth0();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -23,6 +23,11 @@ function EditProduct() {
 
   useEffect(() => {
     const fetchProduct = async () => {
+      // Don't proceed if Auth0 is still loading
+      if (authLoading) {
+        return;
+      }
+
       if (!isAuthenticated || !user) {
         setError('Please log in to edit products');
         setLoading(false);
@@ -47,7 +52,7 @@ function EditProduct() {
     };
 
     fetchProduct();
-  }, [productId, isAuthenticated, user]);
+  }, [productId, isAuthenticated, user, authLoading]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -131,8 +136,13 @@ function EditProduct() {
     }));
   };
 
-  if (loading) {
+  // Show loading state while Auth0 is checking authentication
+  if (authLoading) {
     return <div className="edit-product loading">Loading...</div>;
+  }
+
+  if (loading) {
+    return <div className="edit-product loading">Loading product details...</div>;
   }
 
   if (error) {
