@@ -308,18 +308,24 @@ nav a.active {
 
 .product-meta {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
 }
 
 .price {
-  font-weight: 600;
+  font-weight: bold;
   color: var(--primary-color);
-  font-size: 1.1rem;
+}
+
+.stock {
+  color: var(--text-color);
+  font-size: 0.9rem;
+  opacity: 0.8;
 }
 
 .rating {
-  color: #666;
+  color: #f59e0b;
   font-size: 0.9rem;
 }
 

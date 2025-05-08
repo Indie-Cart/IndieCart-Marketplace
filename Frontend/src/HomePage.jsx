@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './HomePage.css';
 import { useAuth0 } from "@auth0/auth0-react";
@@ -11,6 +11,27 @@ const API_URL = window.location.hostname === 'localhost'
 function HomePage() {
   const { loginWithRedirect, logout, isAuthenticated, user } = useAuth0();
   const navigate = useNavigate();
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/products?limit=6`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch products');
+        }
+        const data = await response.json();
+        setFeaturedProducts(data);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   useEffect(() => {
     const registerBuyer = async () => {
@@ -36,41 +57,6 @@ function HomePage() {
     registerBuyer();
   }, [isAuthenticated, user]);
 
-  const featuredProducts = [
-    {
-      id: 1,
-      title: "Clay Mug",
-      creator: "ClayCraft Studio",
-      price: "R45",
-      image: "https://i.pinimg.com/736x/88/76/90/88769088ec2cce51220254c412f4b0e2.jpg",
-      rating: 4.8
-    },
-    {
-      id: 2,
-      title: "Macrame Wall Hanging",
-      creator: "Knotty Creations",
-      price: "R65",
-      image: "https://i.etsystatic.com/12804288/r/il/065b6f/2512936856/il_fullxfull.2512936856_i1a0.jpg",
-      rating: 4.9
-    },
-    {
-      id: 3,
-      title: "Everyday Water Bottle",
-      creator: "TimberCraft",
-      price: "R85",
-      image: "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
-      rating: 4.7
-    },
-    {
-      id: 4,
-      title: "Hand-painted Canvas",
-      creator: "Artistic Expressions",
-      price: "R120",
-      image: "https://th.bing.com/th/id/R.df19ece026dccbb7a2ef484e2a62796c?rik=3dWmAZcWi66mEQ&riu=http%3a%2f%2fwww.book530.com%2fpaintingpic%2f20%2fHand-Painted-Oil-Paintings-Canvas-Wall.jpg&ehk=blzB%2f58q5Eg51qQYCgUdjb2%2bO%2fhxeibthur6Bfqa93M%3d&risl=&pid=ImgRaw&r=0",
-      rating: 5.0
-    }
-  ];
-
   return (
     <main className="home-page">
       <section className="hero">
@@ -89,29 +75,36 @@ function HomePage() {
       <section className="products">
         <section className="container">
           <h2>Featured DIY Projects</h2>
-          <section className="product-grid">
-            {featuredProducts.map(product => (
-              <article key={product.id} className="product-card">
-                <figure className="product-image">
-                  <img src={product.image} alt={product.title} />
-                  <figcaption className="product-overlay">
-                    <button onClick={() => navigate(`/products/${product.id}`)} className="view-details-btn">View Details</button>
-                  </figcaption>
-                </figure>
-                <section className="product-info">
-                  <h3>{product.title}</h3>
-                  <p className="creator">by {product.creator}</p>
-                  <section className="product-meta">
-                    <span className="price">{product.price}</span>
-                    <span className="rating">⭐ {product.rating}</span>
-                  </section>
-                </section>
-              </article>
-            ))}
-          </section>
-          <section className="view-all-container">
-            <button onClick={() => navigate('/products')} className="view-all-btn">View All Projects</button>
-          </section>
+          {loading ? (
+            <div className="loading">Loading products...</div>
+          ) : (
+            <>
+              <section className="product-grid">
+                {featuredProducts.map(product => (
+                  <article key={product.product_id} className="product-card">
+                    <figure className="product-image">
+                      <img src={product.image_url} alt={product.title} />
+                      <figcaption className="product-overlay">
+                        <button onClick={() => navigate(`/products/${product.product_id}`)} className="view-details-btn">View Details</button>
+                      </figcaption>
+                    </figure>
+                    <section className="product-info">
+                      <h3>{product.title}</h3>
+                      <p className="creator">by {product.shop_name}</p>
+                      <section className="product-meta">
+                        <span className="price">R{product.price}</span>
+                        <span className="stock">Stock: {product.stock}</span>
+                        {product.rating && <span className="rating">⭐ {product.rating}</span>}
+                      </section>
+                    </section>
+                  </article>
+                ))}
+              </section>
+              <section className="view-all-container">
+                <button onClick={() => navigate('/products')} className="view-all-btn">View All Projects</button>
+              </section>
+            </>
+          )}
         </section>
       </section>
 
