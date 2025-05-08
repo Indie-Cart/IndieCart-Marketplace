@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from 'react-router-dom';
+import { supabaseStorage } from './utils/supabaseClient';
 import './AddProduct.css';
 
 const API_URL = window.location.hostname === 'localhost'
@@ -52,21 +53,65 @@ const AddProduct = () => {
             return;
         }
 
-        const formDataToSend = new FormData();
-        formDataToSend.append('seller_id', user.sub);
-        formDataToSend.append('title', formData.title);
-        formDataToSend.append('description', formData.description);
-        formDataToSend.append('price', formData.price);
-        formDataToSend.append('stock', formData.stock);
-        
-        if (formData.image) {
-            formDataToSend.append('image', formData.image);
-        }
-
         try {
+            let imageUrl = null;
+            
+            // Upload image to Supabase Storage if an image was selected
+            if (formData.image) {
+                const fileExt = formData.image.name.split('.').pop();
+                const fileName = `${Math.random()}.${fileExt}`;
+                // Replace special characters in user ID with underscores
+                const safeUserId = user.sub.replace(/[^a-zA-Z0-9]/g, '_');
+                const filePath = `${safeUserId}/${fileName}`;
+
+                console.log('Attempting to upload image:', {
+                    filePath,
+                    fileType: formData.image.type,
+                    fileSize: formData.image.size
+                });
+
+                const { data: uploadData, error: uploadError } = await supabaseStorage.storage
+                    .from('product-images')
+                    .upload(filePath, formData.image, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (uploadError) {
+                    console.error('Upload error details:', {
+                        error: uploadError,
+                        message: uploadError.message,
+                        statusCode: uploadError.statusCode,
+                        name: uploadError.name
+                    });
+                    throw new Error(`Failed to upload image: ${uploadError.message}`);
+                }
+
+                console.log('Upload successful:', uploadData);
+
+                // Get the public URL for the uploaded image
+                const { data: { publicUrl } } = supabaseStorage.storage
+                    .from('product-images')
+                    .getPublicUrl(filePath);
+
+                console.log('Generated public URL:', publicUrl);
+                imageUrl = publicUrl;
+            }
+
+            // Send product data to your backend
             const response = await fetch(`${API_URL}/api/products`, {
                 method: 'POST',
-                body: formDataToSend
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    seller_id: user.sub,
+                    title: formData.title,
+                    description: formData.description,
+                    price: formData.price,
+                    stock: formData.stock,
+                    image_url: imageUrl
+                })
             });
 
             const data = await response.json();

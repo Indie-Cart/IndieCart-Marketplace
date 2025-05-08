@@ -1,0 +1,9 @@
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = 'https://lyzdofwfiepznlcbxgxs.supabase.co'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5emRvZndmaWVwem5sY2J4Z3hzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk5MjQ5NzAsImV4cCI6MjA1NTUwMDk3MH0.8YwXZQZQZQZQZQZQZQZQZQZQZQZQZQZQZQZQZQZQ'
+const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5emRvZndmaWVwem5sY2J4Z3hzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0NjYxMTY3NCwiZXhwIjoyMDYyMTg3Njc0fQ.W6HNJYhuKklykN6AhtPfpPgMn35V2L2LpeAr7Y9RbbA'
+
+// Create two clients - one for public operations and one for storage
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabaseStorage = createClient(supabaseUrl, supabaseServiceKey) 

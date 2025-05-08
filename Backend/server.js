@@ -85,12 +85,11 @@ app.post('/api/buyers', async (req, res) => {
 });
 
 // API endpoint to add new product
-app.post('/api/products', upload.single('image'), async (req, res) => {
+app.post('/api/products', async (req, res) => {
     try {
         console.log('Adding new product - Request body:', req.body);
-        console.log('Image file:', req.file);
 
-        const { seller_id, title, description, price, stock } = req.body;
+        const { seller_id, title, description, price, stock, image_url } = req.body;
 
         if (!seller_id || !title || !description || !price || !stock) {
             return res.status(400).json({
@@ -114,8 +113,8 @@ app.post('/api/products', upload.single('image'), async (req, res) => {
         const parsedStock = parseInt(stock, 10);
 
         const result = await sql`
-            INSERT INTO products (seller_id, title, description, price, stock, image)
-            VALUES (${seller_id}, ${title}, ${description}, ${parsedPrice}, ${parsedStock}, ${req.file ? req.file.buffer : null})
+            INSERT INTO products (seller_id, title, description, price, stock, image_url)
+            VALUES (${seller_id}, ${title}, ${description}, ${parsedPrice}, ${parsedStock}, ${image_url})
             RETURNING *`;
 
         console.log('Product added successfully:', result);
@@ -136,22 +135,13 @@ app.post('/api/products', upload.single('image'), async (req, res) => {
 app.get('/api/products', async (req, res) => {
     try {
         const products = await sql`
-            SELECT p.product_id, p.seller_id, p.title, p.description, p.price, p.stock, p.image, s.shop_name
+            SELECT p.product_id, p.seller_id, p.title, p.description, p.price, p.stock, p.image_url, s.shop_name
             FROM products p
             LEFT JOIN seller s ON p.seller_id = s.seller_id
             ORDER BY p.product_id DESC
         `;
 
-        // Convert binary image data to base64
-        const productsWithImages = products.map(product => {
-            if (product.image) {
-                const base64Image = Buffer.from(product.image).toString('base64');
-                product.image = `data:image/jpeg;base64,${base64Image}`;
-            }
-            return product;
-        });
-
-        res.json(productsWithImages);
+        res.json(products);
     } catch (err) {
         console.error('Error fetching products:', err);
         res.status(500).json({ error: 'Failed to fetch products' });
@@ -172,12 +162,7 @@ app.get('/api/products/:productId', async (req, res) => {
             return res.status(404).json({ error: 'Product not found' });
         }
 
-        const product = result[0];
-        if (product.image) {
-            product.image = `data:image/jpeg;base64,${Buffer.from(product.image).toString('base64')}`;
-        }
-
-        res.json(product);
+        res.json(result[0]);
     } catch (err) {
         console.error('Error fetching product:', err);
         res.status(500).json({ error: 'Failed to fetch product' });
@@ -189,7 +174,7 @@ app.get('/api/products/seller/:shopName', async (req, res) => {
     try {
         const { shopName } = req.params;
         const result = await sql`
-            SELECT p.product_id, p.seller_id, p.title, p.description, p.price, p.stock, p.image, s.shop_name
+            SELECT p.product_id, p.seller_id, p.title, p.description, p.price, p.stock, p.image_url, s.shop_name
             FROM products p
             LEFT JOIN seller s ON p.seller_id = s.seller_id
             WHERE s.shop_name = ${shopName}
@@ -199,16 +184,7 @@ app.get('/api/products/seller/:shopName', async (req, res) => {
             return res.status(404).json({ error: 'No products found for this seller' });
         }
 
-        // Convert binary image data to base64
-        const productsWithImages = result.map(product => {
-            if (product.image) {
-                const base64Image = Buffer.from(product.image).toString('base64');
-                product.image = `data:image/jpeg;base64,${base64Image}`;
-            }
-            return product;
-        });
-
-        res.json(productsWithImages);
+        res.json(result);
     } catch (err) {
         console.error('Error fetching seller products:', err);
         res.status(500).json({ error: 'Failed to fetch seller products' });
@@ -256,23 +232,15 @@ app.get('/api/seller/check/:userId', async (req, res) => {
 
         // Get seller's products
         const productsResult = await sql`
-            SELECT p.product_id, p.title, p.description, p.price, p.stock, p.image
+            SELECT p.product_id, p.title, p.description, p.price, p.stock, p.image_url
             FROM products p
             WHERE p.seller_id = ${userId}
             ORDER BY p.product_id DESC`;
 
-        // Convert binary image data to base64
-        const productsWithImages = productsResult.map(product => {
-            if (product.image) {
-                product.image = `data:image/jpeg;base64,${Buffer.from(product.image).toString('base64')}`;
-            }
-            return product;
-        });
-
         res.json({
             isSeller: true,
             sellerInfo: result[0],
-            products: productsWithImages
+            products: productsResult
         });
     } catch (error) {
         console.error('Error checking seller status:', error);
@@ -433,7 +401,7 @@ app.get('/api/cart', async (req, res) => {
                 p.title,
                 p.description,
                 p.price,
-                p.image,
+                p.image_url,
                 op.quantity,
                 p.stock
             FROM "order" o
@@ -441,15 +409,7 @@ app.get('/api/cart', async (req, res) => {
             JOIN products p ON op.product_id = p.product_id
             WHERE o.buyer_id = ${buyerId} AND o.status = 'cart'`;
 
-        // Convert binary image data to base64
-        const cartItems = result.map(item => {
-            if (item.image) {
-                item.image = `data:image/jpeg;base64,${Buffer.from(item.image).toString('base64')}`;
-            }
-            return item;
-        });
-
-        res.json(cartItems);
+        res.json(result);
     } catch (err) {
         console.error('Error fetching cart items:', err);
         res.status(500).json({ error: 'Failed to fetch cart items' });

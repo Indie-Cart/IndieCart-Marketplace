@@ -86,8 +86,8 @@ function ProductDetailsPage() {
       <section className="container">
         <article className="product-details">
           <figure className="product-image">
-            {product.image ? (
-              <img src={product.image} alt={product.title} />
+            {product.image_url ? (
+              <img src={product.image_url} alt={product.title} />
             ) : (
               <div className="no-image">No Image Available</div>
             )}
