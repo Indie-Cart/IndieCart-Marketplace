@@ -19,7 +19,7 @@ function Layout({ children }) {
               {isAuthenticated ? (
                 <>
                   <li><Link to="/seller-dashboard">Seller Dashboard</Link></li>
-                  <li><span className="user-greeting">Welcome, {user.name}</span></li>
+                  <li><span className="user-greeting">Welcome, {user.email.split('@')[0]}</span></li>
                   <li><button onClick={() => logout({ returnTo: window.location.origin })} className="logout-btn">Log Out</button></li>
                 </>
               ) : (
