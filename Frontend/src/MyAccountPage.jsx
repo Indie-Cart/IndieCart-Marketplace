@@ -42,40 +42,15 @@ function MyAccountPage() {
                     setEditInfo(detailsData);
                 }
 
-                // Fetch orders
-                const ordersResponse = await fetch(`${API_URL}/api/orders`, {
+                // Fetch paid orders for this buyer
+                const ordersResponse = await fetch(`${API_URL}/api/buyer/orders`, {
                     headers: {
                         'x-user-id': user.sub
                     }
                 });
 
                 if (ordersResponse.ok) {
-                    let ordersData = await ordersResponse.json();
-
-                    // If the response is a flat list, group by order_id
-                    if (Array.isArray(ordersData) && ordersData.length > 0 && ordersData[0].product_id !== undefined) {
-                        const grouped = {};
-                        ordersData.forEach(row => {
-                            if (!grouped[row.order_id]) {
-                                grouped[row.order_id] = {
-                                    order_id: row.order_id,
-                                    status: row.status,
-                                    created_at: row.created_at,
-                                    buyer_id: row.buyer_id,
-                                    items: [],
-                                };
-                            }
-                            grouped[row.order_id].items.push({
-                                product_id: row.product_id,
-                                title: row.title,
-                                price: row.price,
-                                image_url: row.image_url,
-                                quantity: row.quantity,
-                            });
-                        });
-                        ordersData = Object.values(grouped);
-                    }
-
+                    const ordersData = await ordersResponse.json();
                     setOrders(ordersData);
                 }
             } catch (err) {
@@ -247,7 +222,6 @@ function MyAccountPage() {
                                             </span>
                                         </div>
                                         <div className="order-details">
-                                            <p>Date: {new Date(order.created_at).toLocaleDateString()}</p>
                                             <p>Total: R{order.total_amount}</p>
                                         </div>
                                         <div className="order-items">
@@ -258,6 +232,7 @@ function MyAccountPage() {
                                                         <h4>{item.title}</h4>
                                                         <p>Quantity: {item.quantity}</p>
                                                         <p>Price: R{item.price}</p>
+                                                        <p>Status: <span className={`order-status ${item.product_status}`}>{item.product_status}</span></p>
                                                     </div>
                                                 </div>
                                             ))}

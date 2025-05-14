@@ -168,60 +168,7 @@ app.get('/api/products/:productId', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch product' });
     }
 });
-// API endpoint to get all orders for a buyer, with products for each order
-app.get('/api/orders', async (req, res) => {
-    try {
-        const buyerId = req.headers['x-user-id'];
-        if (!buyerId) {
-            return res.status(401).json({ error: 'User not authenticated' });
-        }
 
-        // Get all orders (except cart) for this buyer, with their products
-        const rows = await sql`
-            SELECT
-                o.order_id,
-                o.status,
-                o.created_at,
-                op.product_id,
-                op.quantity,
-                p.title,
-                p.price,
-                p.image_url,
-                (op.quantity * p.price) as item_total
-            FROM "order" o
-            JOIN order_products op ON o.order_id = op.order_id
-            JOIN products p ON op.product_id = p.product_id
-            WHERE o.buyer_id = ${buyerId} AND o.status != 'cart'
-            ORDER BY o.created_at DESC, o.order_id DESC
-        `;
-
-        // Group by order_id and calculate total amount
-        const grouped = {};
-        for (const row of rows) {
-            if (!grouped[row.order_id]) {
-                grouped[row.order_id] = {
-                    order_id: row.order_id,
-                    status: row.status,
-                    created_at: row.created_at,
-                    total_amount: 0,
-                    items: [],
-                };
-            }
-            grouped[row.order_id].items.push({
-                product_id: row.product_id,
-                title: row.title,
-                price: row.price,
-                image_url: row.image_url,
-                quantity: row.quantity,
-            });
-            grouped[row.order_id].total_amount += row.item_total;
-        }
-        res.json(Object.values(grouped));
-    } catch (err) {
-        console.error('Error fetching orders:', err);
-        res.status(500).json({ error: 'Failed to fetch orders' });
-    }
-});
 
 // API endpoint to get products by seller name
 app.get('/api/products/seller/:shopName', async (req, res) => {
@@ -877,6 +824,47 @@ app.get('/api/buyers/details', async (req, res) => {
     } catch (error) {
         console.error('Error fetching buyer details:', error);
         res.status(500).json({ error: 'Failed to fetch buyer details' });
+    }
+});
+
+// API endpoint to get all 'paid' orders for a buyer, including product status
+app.get('/api/buyer/orders', async (req, res) => {
+    try {
+        const buyerId = req.headers['x-user-id'];
+        if (!buyerId) {
+            return res.status(401).json({ error: 'User not authenticated' });
+        }
+        // Get all paid orders for this buyer (remove created_at)
+        const orders = await sql`
+            SELECT o.order_id, o.status, o.buyer_id
+            FROM "order" o
+            WHERE o.buyer_id = ${buyerId} AND o.status = 'paid'
+            ORDER BY o.order_id DESC
+        `;
+        // For each order, get the products and their status
+        const ordersWithItems = [];
+        for (const order of orders) {
+            const items = await sql`
+                SELECT op.product_id, op.quantity, op.status as product_status, p.title, p.price, p.image_url
+                FROM order_products op
+                JOIN products p ON op.product_id = p.product_id
+                WHERE op.order_id = ${order.order_id}
+            `;
+            // Calculate total amount for the order
+            let total_amount = 0;
+            items.forEach(item => {
+                total_amount += Number(item.price) * Number(item.quantity);
+            });
+            ordersWithItems.push({
+                ...order,
+                total_amount,
+                items
+            });
+        }
+        res.json(ordersWithItems);
+    } catch (error) {
+        console.error('Error fetching buyer orders:', error);
+        res.status(500).json({ error: 'Failed to fetch buyer orders' });
     }
 });
 
