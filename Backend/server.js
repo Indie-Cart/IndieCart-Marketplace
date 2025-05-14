@@ -749,6 +749,61 @@ app.get('/api/seller/orders-shipping/:sellerId', async (req, res) => {
     }
 });
 
+// Get products to ship for a seller
+app.get('/api/seller/products-to-ship/:sellerId', async (req, res) => {
+  try {
+    const { sellerId } = req.params;
+    const products = await sql`
+      SELECT op.id, op.order_id, op.product_id, op.quantity, op.status, o.buyer_id, p.title
+      FROM order_products op
+      JOIN products p ON op.product_id = p.product_id
+      JOIN "order" o ON op.order_id = o.order_id
+      WHERE p.seller_id = ${sellerId} AND op.status = 'pending' AND o.status = 'paid'
+      ORDER BY op.order_id DESC
+    `;
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch products to ship' });
+  }
+});
+
+// Get products being shipped for a seller
+app.get('/api/seller/products-shipping/:sellerId', async (req, res) => {
+  try {
+    const { sellerId } = req.params;
+    const products = await sql`
+      SELECT op.id, op.order_id, op.product_id, op.quantity, op.status, o.buyer_id, p.title
+      FROM order_products op
+      JOIN products p ON op.product_id = p.product_id
+      JOIN "order" o ON op.order_id = o.order_id
+      WHERE p.seller_id = ${sellerId} AND op.status = 'shipping' AND o.status = 'paid'
+      ORDER BY op.order_id DESC
+    `;
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch products being shipped' });
+  }
+});
+
+// Mark a product as shipped
+app.put('/api/seller/mark-product-shipped/:orderProductId', async (req, res) => {
+  try {
+    const { orderProductId } = req.params;
+    const result = await sql`
+      UPDATE order_products
+      SET status = 'shipping'
+      WHERE id = ${orderProductId} AND status = 'pending'
+      RETURNING *
+    `;
+    if (result.length === 0) {
+      return res.status(404).json({ error: 'Order product not found or not pending' });
+    }
+    res.json({ message: 'Product marked as shipping', orderProduct: result[0] });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to mark product as shipped' });
+  }
+});
+
 // Only start the server when running the file directly
 if (require.main === module) {
     app.listen(PORT, () => {

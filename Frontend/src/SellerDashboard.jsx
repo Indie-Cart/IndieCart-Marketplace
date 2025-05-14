@@ -17,6 +17,9 @@ function SellerDashboard() {
   const [ordersToShip, setOrdersToShip] = useState([]);
   const [shippingOrderIds, setShippingOrderIds] = useState([]);
   const [shippingOrders, setShippingOrders] = useState([]);
+  const [productsToShip, setProductsToShip] = useState([]);
+  const [productsShipping, setProductsShipping] = useState([]);
+  const [markingIds, setMarkingIds] = useState([]);
 
   useEffect(() => {
     const fetchSellerData = async () => {
@@ -56,6 +59,11 @@ function SellerDashboard() {
         const shippingRes = await fetch(`${API_URL}/api/seller/orders-shipping/${user.sub}`);
         const shippingData = await shippingRes.json();
         setShippingOrders(shippingData);
+
+        const toShipRes = await fetch(`${API_URL}/api/seller/products-to-ship/${user.sub}`);
+        setProductsToShip(await toShipRes.json());
+        const shippingRes2 = await fetch(`${API_URL}/api/seller/products-shipping/${user.sub}`);
+        setProductsShipping(await shippingRes2.json());
       } catch (error) {
         console.error('Error fetching seller data:', error);
         setError('Failed to load seller dashboard');
@@ -67,23 +75,22 @@ function SellerDashboard() {
     fetchSellerData();
   }, [isAuthenticated, user, navigate, authLoading]);
 
-  const handleMarkShipped = async (orderId) => {
-    setShippingOrderIds(prev => [...prev, orderId]);
+  const handleMarkShipped = async (orderProductId) => {
+    setMarkingIds(prev => [...prev, orderProductId]);
     try {
-      const res = await fetch(`${API_URL}/api/seller/mark-shipped/${orderId}`, {
+      const res = await fetch(`${API_URL}/api/seller/mark-product-shipped/${orderProductId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
       });
-      if (!res.ok) {
-        const data = await res.json();
-        alert(data.error || 'Failed to mark as shipped');
+      if (res.ok) {
+        setProductsToShip(prev => prev.filter(p => p.id !== orderProductId));
+        const updated = await res.json();
+        setProductsShipping(prev => [...prev, updated.orderProduct]);
       } else {
-        setOrdersToShip(prev => prev.filter(order => order.order_id !== orderId));
+        alert('Failed to mark as shipped');
       }
-    } catch (err) {
-      alert('Failed to mark as shipped');
     } finally {
-      setShippingOrderIds(prev => prev.filter(id => id !== orderId));
+      setMarkingIds(prev => prev.filter(id => id !== orderProductId));
     }
   };
 
@@ -118,47 +125,42 @@ function SellerDashboard() {
         </section>
 
         <section className="orders-to-ship">
-          <h2>Orders to Ship</h2>
-          {ordersToShip.length === 0 ? (
-            <p>No paid orders to fulfill at this time.</p>
+          <h2>Products to Ship</h2>
+          {productsToShip.length === 0 ? (
+            <p>No products to ship.</p>
           ) : (
-            ordersToShip.map(order => (
-              <div key={order.order_id} className="order-card">
-                <h3>Order #{order.order_id} (Buyer: {order.buyer_id})</h3>
+            productsToShip.map(product => (
+              <div key={product.id} className="order-card">
+                <h3>Order #{product.order_id} (Buyer: {product.buyer_id})</h3>
                 <ul>
-                  {order.products.map(product => (
-                    <li key={product.product_id}>
-                      <strong>{product.title}</strong> (x{product.quantity})
-                    </li>
-                  ))}
+                  <li>
+                    <strong>{product.title}</strong> (x{product.quantity})
+                  </li>
                 </ul>
                 <button
                   className="mark-shipped-btn"
-                  onClick={() => handleMarkShipped(order.order_id)}
-                  disabled={shippingOrderIds.includes(order.order_id)}
+                  onClick={() => handleMarkShipped(product.id)}
+                  disabled={markingIds.includes(product.id)}
                 >
-                  {shippingOrderIds.includes(order.order_id) ? 'Marking...' : 'Mark as Shipped'}
+                  {markingIds.includes(product.id) ? 'Marking...' : 'Mark as Shipped'}
                 </button>
               </div>
             ))
           )}
         </section>
 
-        {/* Orders Being Shipped Section */}
         <section className="orders-to-ship">
-          <h2>Orders Being Shipped</h2>
-          {shippingOrders.length === 0 ? (
-            <p>No orders are currently being shipped.</p>
+          <h2>Products Being Shipped</h2>
+          {productsShipping.length === 0 ? (
+            <p>No products are currently being shipped.</p>
           ) : (
-            shippingOrders.map(order => (
-              <div key={order.order_id} className="order-card">
-                <h3>Order #{order.order_id} (Buyer: {order.buyer_id})</h3>
+            productsShipping.map(product => (
+              <div key={product.id} className="order-card">
+                <h3>Order #{product.order_id} (Buyer: {product.buyer_id})</h3>
                 <ul>
-                  {order.products.map(product => (
-                    <li key={product.product_id}>
-                      <strong>{product.title}</strong> (x{product.quantity})
-                    </li>
-                  ))}
+                  <li>
+                    <strong>{product.title}</strong> (x{product.quantity})
+                  </li>
                 </ul>
                 <span className="shipping-status">Shipping...</span>
               </div>
