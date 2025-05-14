@@ -210,4 +210,62 @@
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.5rem;
   }
+}
+
+.orders-to-ship {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  padding: 2rem;
+  margin-bottom: 3rem;
+}
+
+.orders-to-ship h2 {
+  color: var(--primary-color);
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.order-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background: #fafbfc;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem 1rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.order-card h3 {
+  font-size: 1.1rem;
+  color: var(--text-color);
+  margin-bottom: 0.7rem;
+}
+
+.order-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+}
+
+.order-card li {
+  padding: 0.3rem 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.mark-shipped-btn {
+  background: var(--primary-color);
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  padding: 0.6rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.mark-shipped-btn:hover {
+  background: #1e7e34;
 } 

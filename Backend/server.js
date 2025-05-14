@@ -692,6 +692,63 @@ app.get('/api/seller/orders-to-ship/:sellerId', async (req, res) => {
     }
 });
 
+// API endpoint for seller to mark an order as shipped
+app.put('/api/seller/mark-shipped/:orderId', async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        // Only update if the order is currently 'paid'
+        const result = await sql`
+            UPDATE "order"
+            SET status = 'shipping'
+            WHERE order_id = ${orderId} AND status = 'paid'
+            RETURNING *
+        `;
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'Order not found or not in paid status' });
+        }
+        res.json({ message: 'Order marked as shipping', order: result[0] });
+    } catch (error) {
+        console.error('Error marking order as shipped:', error);
+        res.status(500).json({ error: 'Failed to mark order as shipped' });
+    }
+});
+
+// API endpoint to get all 'shipping' orders with products from a specific seller
+app.get('/api/seller/orders-shipping/:sellerId', async (req, res) => {
+    try {
+        const { sellerId } = req.params;
+        // Get all shipping orders that have products from this seller
+        const orders = await sql`
+            SELECT DISTINCT o.order_id, o.buyer_id, o.status
+            FROM "order" o
+            JOIN order_products op ON o.order_id = op.order_id
+            JOIN products p ON op.product_id = p.product_id
+            WHERE p.seller_id = ${sellerId} AND o.status = 'shipping'
+            ORDER BY o.order_id DESC
+        `;
+
+        // For each order, get the products from this seller
+        const ordersWithProducts = [];
+        for (const order of orders) {
+            const products = await sql`
+                SELECT p.product_id, p.title, p.description, p.price, p.image_url, op.quantity
+                FROM order_products op
+                JOIN products p ON op.product_id = p.product_id
+                WHERE op.order_id = ${order.order_id} AND p.seller_id = ${sellerId}
+            `;
+            ordersWithProducts.push({
+                ...order,
+                products
+            });
+        }
+
+        res.json(ordersWithProducts);
+    } catch (error) {
+        console.error('Error fetching seller shipping orders:', error);
+        res.status(500).json({ error: 'Failed to fetch shipping orders' });
+    }
+});
+
 // Only start the server when running the file directly
 if (require.main === module) {
     app.listen(PORT, () => {

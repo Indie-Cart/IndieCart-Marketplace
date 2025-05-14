@@ -15,6 +15,8 @@ function SellerDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [ordersToShip, setOrdersToShip] = useState([]);
+  const [shippingOrderIds, setShippingOrderIds] = useState([]);
+  const [shippingOrders, setShippingOrders] = useState([]);
 
   useEffect(() => {
     const fetchSellerData = async () => {
@@ -50,6 +52,10 @@ function SellerDashboard() {
         const ordersRes = await fetch(`${API_URL}/api/seller/orders-to-ship/${user.sub}`);
         const ordersData = await ordersRes.json();
         setOrdersToShip(ordersData);
+        // Fetch orders being shipped
+        const shippingRes = await fetch(`${API_URL}/api/seller/orders-shipping/${user.sub}`);
+        const shippingData = await shippingRes.json();
+        setShippingOrders(shippingData);
       } catch (error) {
         console.error('Error fetching seller data:', error);
         setError('Failed to load seller dashboard');
@@ -60,6 +66,26 @@ function SellerDashboard() {
 
     fetchSellerData();
   }, [isAuthenticated, user, navigate, authLoading]);
+
+  const handleMarkShipped = async (orderId) => {
+    setShippingOrderIds(prev => [...prev, orderId]);
+    try {
+      const res = await fetch(`${API_URL}/api/seller/mark-shipped/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || 'Failed to mark as shipped');
+      } else {
+        setOrdersToShip(prev => prev.filter(order => order.order_id !== orderId));
+      }
+    } catch (err) {
+      alert('Failed to mark as shipped');
+    } finally {
+      setShippingOrderIds(prev => prev.filter(id => id !== orderId));
+    }
+  };
 
   // Show loading state while Auth0 is checking authentication
   if (authLoading) {
@@ -106,6 +132,35 @@ function SellerDashboard() {
                     </li>
                   ))}
                 </ul>
+                <button
+                  className="mark-shipped-btn"
+                  onClick={() => handleMarkShipped(order.order_id)}
+                  disabled={shippingOrderIds.includes(order.order_id)}
+                >
+                  {shippingOrderIds.includes(order.order_id) ? 'Marking...' : 'Mark as Shipped'}
+                </button>
+              </div>
+            ))
+          )}
+        </section>
+
+        {/* Orders Being Shipped Section */}
+        <section className="orders-to-ship">
+          <h2>Orders Being Shipped</h2>
+          {shippingOrders.length === 0 ? (
+            <p>No orders are currently being shipped.</p>
+          ) : (
+            shippingOrders.map(order => (
+              <div key={order.order_id} className="order-card">
+                <h3>Order #{order.order_id} (Buyer: {order.buyer_id})</h3>
+                <ul>
+                  {order.products.map(product => (
+                    <li key={product.product_id}>
+                      <strong>{product.title}</strong> (x{product.quantity})
+                    </li>
+                  ))}
+                </ul>
+                <span className="shipping-status">Shipping...</span>
               </div>
             ))
           )}
