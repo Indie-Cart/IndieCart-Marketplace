@@ -29,9 +29,9 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 async function testDbConnection() {
     try {
         const result = await sql`SELECT 1 AS result`;
-        console.log("✅ DB Connected! Result:", result);
+        console.log("âœ… DB Connected! Result:", result);
     } catch (err) {
-        console.error("❌ DB Connection failed:", err.message);
+        console.error("âŒ DB Connection failed:", err.message);
     }
 }
 
@@ -166,6 +166,60 @@ app.get('/api/products/:productId', async (req, res) => {
     } catch (err) {
         console.error('Error fetching product:', err);
         res.status(500).json({ error: 'Failed to fetch product' });
+    }
+});
+// API endpoint to get all orders for a buyer, with products for each order
+app.get('/api/orders', async (req, res) => {
+    try {
+        const buyerId = req.headers['x-user-id'];
+        if (!buyerId) {
+            return res.status(401).json({ error: 'User not authenticated' });
+        }
+
+        // Get all orders (except cart) for this buyer, with their products
+        const rows = await sql`
+            SELECT
+                o.order_id,
+                o.status,
+                o.created_at,
+                op.product_id,
+                op.quantity,
+                p.title,
+                p.price,
+                p.image_url,
+                (op.quantity * p.price) as item_total
+            FROM "order" o
+            JOIN order_products op ON o.order_id = op.order_id
+            JOIN products p ON op.product_id = p.product_id
+            WHERE o.buyer_id = ${buyerId} AND o.status != 'cart'
+            ORDER BY o.created_at DESC, o.order_id DESC
+        `;
+
+        // Group by order_id and calculate total amount
+        const grouped = {};
+        for (const row of rows) {
+            if (!grouped[row.order_id]) {
+                grouped[row.order_id] = {
+                    order_id: row.order_id,
+                    status: row.status,
+                    created_at: row.created_at,
+                    total_amount: 0,
+                    items: [],
+                };
+            }
+            grouped[row.order_id].items.push({
+                product_id: row.product_id,
+                title: row.title,
+                price: row.price,
+                image_url: row.image_url,
+                quantity: row.quantity,
+            });
+            grouped[row.order_id].total_amount += row.item_total;
+        }
+        res.json(Object.values(grouped));
+    } catch (err) {
+        console.error('Error fetching orders:', err);
+        res.status(500).json({ error: 'Failed to fetch orders' });
     }
 });
 
@@ -312,7 +366,153 @@ app.delete('/api/products/:productId', async (req, res) => {
         });
     }
 });
+// API endpoint to get all 'paid' orders with products from a specific seller
+app.get('/api/seller/orders-to-ship/:sellerId', async (req, res) => {
+    try {
+        const { sellerId } = req.params;
+        // Get all paid orders that have products from this seller
+        const orders = await sql`
+            SELECT DISTINCT o.order_id, o.buyer_id, o.status
+            FROM "order" o
+            JOIN order_products op ON o.order_id = op.order_id
+            JOIN products p ON op.product_id = p.product_id
+            WHERE p.seller_id = ${sellerId} AND o.status = 'paid'
+            ORDER BY o.order_id DESC
+        `;
 
+        // For each order, get the products from this seller
+        const ordersWithProducts = [];
+        for (const order of orders) {
+            const products = await sql`
+                SELECT p.product_id, p.title, p.description, p.price, p.image_url, op.quantity
+                FROM order_products op
+                JOIN products p ON op.product_id = p.product_id
+                WHERE op.order_id = ${order.order_id} AND p.seller_id = ${sellerId}
+            `;
+            ordersWithProducts.push({
+                ...order,
+                products
+            });
+        }
+
+        res.json(ordersWithProducts);
+    } catch (error) {
+        console.error('Error fetching seller orders to ship:', error);
+        res.status(500).json({ error: 'Failed to fetch orders to ship' });
+    }
+});
+
+// API endpoint for seller to mark an order as shipped
+app.put('/api/seller/mark-shipped/:orderId', async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        // Only update if the order is currently 'paid'
+        const result = await sql`
+            UPDATE "order"
+            SET status = 'shipping'
+            WHERE order_id = ${orderId} AND status = 'paid'
+            RETURNING *
+        `;
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'Order not found or not in paid status' });
+        }
+        res.json({ message: 'Order marked as shipping', order: result[0] });
+    } catch (error) {
+        console.error('Error marking order as shipped:', error);
+        res.status(500).json({ error: 'Failed to mark order as shipped' });
+    }
+});
+
+// API endpoint to get all 'shipping' orders with products from a specific seller
+app.get('/api/seller/orders-shipping/:sellerId', async (req, res) => {
+    try {
+        const { sellerId } = req.params;
+        // Get all shipping orders that have products from this seller
+        const orders = await sql`
+            SELECT DISTINCT o.order_id, o.buyer_id, o.status
+            FROM "order" o
+            JOIN order_products op ON o.order_id = op.order_id
+            JOIN products p ON op.product_id = p.product_id
+            WHERE p.seller_id = ${sellerId} AND o.status = 'shipping'
+            ORDER BY o.order_id DESC
+        `;
+
+        // For each order, get the products from this seller
+        const ordersWithProducts = [];
+        for (const order of orders) {
+            const products = await sql`
+                SELECT p.product_id, p.title, p.description, p.price, p.image_url, op.quantity
+                FROM order_products op
+                JOIN products p ON op.product_id = p.product_id
+                WHERE op.order_id = ${order.order_id} AND p.seller_id = ${sellerId}
+            `;
+            ordersWithProducts.push({
+                ...order,
+                products
+            });
+        }
+
+        res.json(ordersWithProducts);
+    } catch (error) {
+        console.error('Error fetching seller shipping orders:', error);
+        res.status(500).json({ error: 'Failed to fetch shipping orders' });
+    }
+});
+
+// Get products to ship for a seller
+app.get('/api/seller/products-to-ship/:sellerId', async (req, res) => {
+    try {
+        const { sellerId } = req.params;
+        const products = await sql`
+      SELECT op.id, op.order_id, op.product_id, op.quantity, op.status, o.buyer_id, p.title
+      FROM order_products op
+      JOIN products p ON op.product_id = p.product_id
+      JOIN "order" o ON op.order_id = o.order_id
+      WHERE p.seller_id = ${sellerId} AND op.status = 'pending' AND o.status = 'paid'
+      ORDER BY op.order_id DESC
+    `;
+        res.json(products);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch products to ship' });
+    }
+});
+
+// Get products being shipped for a seller
+app.get('/api/seller/products-shipping/:sellerId', async (req, res) => {
+    try {
+        const { sellerId } = req.params;
+        const products = await sql`
+      SELECT op.id, op.order_id, op.product_id, op.quantity, op.status, o.buyer_id, p.title
+      FROM order_products op
+      JOIN products p ON op.product_id = p.product_id
+      JOIN "order" o ON op.order_id = o.order_id
+      WHERE p.seller_id = ${sellerId} AND op.status = 'shipping' AND o.status = 'paid'
+      ORDER BY op.order_id DESC
+    `;
+        res.json(products);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch products being shipped' });
+    }
+});
+
+// Mark a product as shipped
+app.put('/api/seller/mark-product-shipped/:orderProductId', async (req, res) => {
+    try {
+        const { orderProductId } = req.params;
+        const result = await sql`
+      UPDATE order_products
+      SET status = 'shipping'
+      WHERE id = ${orderProductId} AND status = 'pending'
+      RETURNING *
+    `;
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'Order product not found or not pending' });
+        }
+        res.json({ message: 'Product marked as shipping', orderProduct: result[0] });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to mark product as shipped' });
+    }
+});
 // API endpoint to add item to cart
 app.post('/api/cart/add', async (req, res) => {
     try {
@@ -586,10 +786,34 @@ app.post('/api/payment/success', async (req, res) => {
         if (!buyerId) {
             return res.status(401).json({ error: 'User not authenticated' });
         }
-        await sql`UPDATE "order" SET status = 'paid' WHERE buyer_id = ${buyerId} AND status = 'cart'`;
+
+        // Start a transaction
+        await sql.begin(async (sql) => {
+            // Get the cart order for this buyer
+            const cartOrder = await sql`
+                SELECT order_id 
+                FROM "order" 
+                WHERE buyer_id = ${buyerId} AND status = 'cart'
+            `;
+
+            if (cartOrder.length === 0) {
+                throw new Error('No cart order found');
+            }
+
+            // Update the order status to paid
+            await sql`
+                UPDATE "order" 
+                SET status = 'paid' 
+                WHERE order_id = ${cartOrder[0].order_id}
+            `;
+        });
+
         res.status(200).json({ message: 'Order marked as paid' });
     } catch (err) {
         console.error('Error updating order status on payment success:', err);
+        if (err.message === 'No cart order found') {
+            return res.status(404).json({ error: err.message });
+        }
         res.status(500).json({ error: 'Failed to update order status' });
     }
 });
@@ -656,154 +880,6 @@ app.get('/api/buyers/details', async (req, res) => {
     }
 });
 
-// API endpoint to get all 'paid' orders with products from a specific seller
-app.get('/api/seller/orders-to-ship/:sellerId', async (req, res) => {
-    try {
-        const { sellerId } = req.params;
-        // Get all paid orders that have products from this seller
-        const orders = await sql`
-            SELECT DISTINCT o.order_id, o.buyer_id, o.status
-            FROM "order" o
-            JOIN order_products op ON o.order_id = op.order_id
-            JOIN products p ON op.product_id = p.product_id
-            WHERE p.seller_id = ${sellerId} AND o.status = 'paid'
-            ORDER BY o.order_id DESC
-        `;
-
-        // For each order, get the products from this seller
-        const ordersWithProducts = [];
-        for (const order of orders) {
-            const products = await sql`
-                SELECT p.product_id, p.title, p.description, p.price, p.image_url, op.quantity
-                FROM order_products op
-                JOIN products p ON op.product_id = p.product_id
-                WHERE op.order_id = ${order.order_id} AND p.seller_id = ${sellerId}
-            `;
-            ordersWithProducts.push({
-                ...order,
-                products
-            });
-        }
-
-        res.json(ordersWithProducts);
-    } catch (error) {
-        console.error('Error fetching seller orders to ship:', error);
-        res.status(500).json({ error: 'Failed to fetch orders to ship' });
-    }
-});
-
-// API endpoint for seller to mark an order as shipped
-app.put('/api/seller/mark-shipped/:orderId', async (req, res) => {
-    try {
-        const { orderId } = req.params;
-        // Only update if the order is currently 'paid'
-        const result = await sql`
-            UPDATE "order"
-            SET status = 'shipping'
-            WHERE order_id = ${orderId} AND status = 'paid'
-            RETURNING *
-        `;
-        if (result.length === 0) {
-            return res.status(404).json({ error: 'Order not found or not in paid status' });
-        }
-        res.json({ message: 'Order marked as shipping', order: result[0] });
-    } catch (error) {
-        console.error('Error marking order as shipped:', error);
-        res.status(500).json({ error: 'Failed to mark order as shipped' });
-    }
-});
-
-// API endpoint to get all 'shipping' orders with products from a specific seller
-app.get('/api/seller/orders-shipping/:sellerId', async (req, res) => {
-    try {
-        const { sellerId } = req.params;
-        // Get all shipping orders that have products from this seller
-        const orders = await sql`
-            SELECT DISTINCT o.order_id, o.buyer_id, o.status
-            FROM "order" o
-            JOIN order_products op ON o.order_id = op.order_id
-            JOIN products p ON op.product_id = p.product_id
-            WHERE p.seller_id = ${sellerId} AND o.status = 'shipping'
-            ORDER BY o.order_id DESC
-        `;
-
-        // For each order, get the products from this seller
-        const ordersWithProducts = [];
-        for (const order of orders) {
-            const products = await sql`
-                SELECT p.product_id, p.title, p.description, p.price, p.image_url, op.quantity
-                FROM order_products op
-                JOIN products p ON op.product_id = p.product_id
-                WHERE op.order_id = ${order.order_id} AND p.seller_id = ${sellerId}
-            `;
-            ordersWithProducts.push({
-                ...order,
-                products
-            });
-        }
-
-        res.json(ordersWithProducts);
-    } catch (error) {
-        console.error('Error fetching seller shipping orders:', error);
-        res.status(500).json({ error: 'Failed to fetch shipping orders' });
-    }
-});
-
-// Get products to ship for a seller
-app.get('/api/seller/products-to-ship/:sellerId', async (req, res) => {
-  try {
-    const { sellerId } = req.params;
-    const products = await sql`
-      SELECT op.id, op.order_id, op.product_id, op.quantity, op.status, o.buyer_id, p.title
-      FROM order_products op
-      JOIN products p ON op.product_id = p.product_id
-      JOIN "order" o ON op.order_id = o.order_id
-      WHERE p.seller_id = ${sellerId} AND op.status = 'pending' AND o.status = 'paid'
-      ORDER BY op.order_id DESC
-    `;
-    res.json(products);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch products to ship' });
-  }
-});
-
-// Get products being shipped for a seller
-app.get('/api/seller/products-shipping/:sellerId', async (req, res) => {
-  try {
-    const { sellerId } = req.params;
-    const products = await sql`
-      SELECT op.id, op.order_id, op.product_id, op.quantity, op.status, o.buyer_id, p.title
-      FROM order_products op
-      JOIN products p ON op.product_id = p.product_id
-      JOIN "order" o ON op.order_id = o.order_id
-      WHERE p.seller_id = ${sellerId} AND op.status = 'shipping' AND o.status = 'paid'
-      ORDER BY op.order_id DESC
-    `;
-    res.json(products);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch products being shipped' });
-  }
-});
-
-// Mark a product as shipped
-app.put('/api/seller/mark-product-shipped/:orderProductId', async (req, res) => {
-  try {
-    const { orderProductId } = req.params;
-    const result = await sql`
-      UPDATE order_products
-      SET status = 'shipping'
-      WHERE id = ${orderProductId} AND status = 'pending'
-      RETURNING *
-    `;
-    if (result.length === 0) {
-      return res.status(404).json({ error: 'Order product not found or not pending' });
-    }
-    res.json({ message: 'Product marked as shipping', orderProduct: result[0] });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to mark product as shipped' });
-  }
-});
-
 // Only start the server when running the file directly
 if (require.main === module) {
     app.listen(PORT, () => {
@@ -820,7 +896,7 @@ app.get('*', (req, res) => {
     if (req.path.startsWith('/api/')) {
         return res.status(404).json({ error: 'API endpoint not found' });
     }
-    
+
     res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
