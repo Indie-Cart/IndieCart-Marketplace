@@ -14,6 +14,7 @@ import EditProduct from './EditProduct';
 import CartPage from './CartPage';
 import ShippingPage from './ShippingPage';
 import CheckoutPage from './CheckoutPage';
+import MyAccountPage from './MyAccountPage';
 import "./App.css";
 import axios from 'axios';
 
@@ -29,16 +30,16 @@ function AppContent() {
       axios.post('/api/payment/success', {}, {
         headers: { 'x-user-id': user.sub }
       })
-      .then(() => {
-        alert('Payment successful! Thank you for your purchase.');
-      })
-      .catch(() => {
-        alert('Payment was successful, but there was an issue updating your order.');
-      })
-      .finally(() => {
-        // Clear the URL parameter
-        window.history.replaceState({}, document.title, window.location.pathname);
-      });
+        .then(() => {
+          alert('Payment successful! Thank you for your purchase.');
+        })
+        .catch(() => {
+          alert('Payment was successful, but there was an issue updating your order.');
+        })
+        .finally(() => {
+          // Clear the URL parameter
+          window.history.replaceState({}, document.title, window.location.pathname);
+        });
     }
   }, [location, isAuthenticated, user]);
 
@@ -57,6 +58,7 @@ function AppContent() {
         <Route path="/cart" element={<CartPage />} />
         <Route path="/shipping" element={<ShippingPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/my-account" element={<MyAccountPage />} />
       </Routes>
     </Layout>
   );
