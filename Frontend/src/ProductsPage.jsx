@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import './ProductsPage.css';
 
@@ -13,6 +13,16 @@ function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({
+    minPrice: 0,
+    maxPrice: 2000,
+    sortBy: 'newest'
+  });
+  const [priceRange, setPriceRange] = useState({
+    min: 0,
+    max: 2000
+  });
+  const sliderTrackRef = useRef(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -24,6 +34,17 @@ function ProductsPage() {
         const data = await response.json();
         setProducts(data);
         setFilteredProducts(data);
+        // Set max price based on highest product price
+        const maxProductPrice = Math.max(...data.map(p => p.price));
+        const roundedMaxPrice = Math.ceil(maxProductPrice / 100) * 100; // Round up to nearest 100
+        setPriceRange({
+          min: 0,
+          max: roundedMaxPrice
+        });
+        setFilters(prev => ({
+          ...prev,
+          maxPrice: roundedMaxPrice
+        }));
       } catch (err) {
         setError(err.message);
       } finally {
@@ -35,11 +56,73 @@ function ProductsPage() {
   }, []);
 
   useEffect(() => {
-    const filtered = products.filter(product =>
-      product.title.toLowerCase().includes(searchQuery.toLowerCase())
+    if (sliderTrackRef.current) {
+      const minPercent = ((filters.minPrice - priceRange.min) / (priceRange.max - priceRange.min)) * 100;
+      const maxPercent = ((filters.maxPrice - priceRange.min) / (priceRange.max - priceRange.min)) * 100;
+      sliderTrackRef.current.style.setProperty('--min-percent', `${minPercent}%`);
+      sliderTrackRef.current.style.setProperty('--max-percent', `${maxPercent}%`);
+    }
+  }, [filters.minPrice, filters.maxPrice, priceRange]);
+
+  useEffect(() => {
+    let filtered = [...products];
+
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(product =>
+        product.title.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Apply price range filter
+    filtered = filtered.filter(product =>
+      product.price >= filters.minPrice && product.price <= filters.maxPrice
     );
+
+    // Apply sorting
+    switch (filters.sortBy) {
+      case 'price-low-high':
+        filtered.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-high-low':
+        filtered.sort((a, b) => b.price - a.price);
+        break;
+      case 'newest':
+        filtered.sort((a, b) => b.product_id - a.product_id);
+        break;
+      default:
+        break;
+    }
+
     setFilteredProducts(filtered);
-  }, [searchQuery, products]);
+  }, [searchQuery, products, filters]);
+
+  const handleMinPriceChange = (e) => {
+    const value = Number(e.target.value);
+    if (value <= filters.maxPrice) {
+      setFilters(prev => ({
+        ...prev,
+        minPrice: value
+      }));
+    }
+  };
+
+  const handleMaxPriceChange = (e) => {
+    const value = Number(e.target.value);
+    if (value >= filters.minPrice) {
+      setFilters(prev => ({
+        ...prev,
+        maxPrice: value
+      }));
+    }
+  };
+
+  const handleSortChange = (e) => {
+    setFilters(prev => ({
+      ...prev,
+      sortBy: e.target.value
+    }));
+  };
 
   if (loading) return <div className="loading">Loading products...</div>;
   if (error) return <div className="error">Error: {error}</div>;
@@ -48,19 +131,57 @@ function ProductsPage() {
     <main className="products-page">
       <section className="container">
         <h1>All Products</h1>
-        <div className="search-container">
-          <input
-            type="text"
-            placeholder="Search products..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input"
-          />
-          <div className="search-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
+        <div className="filters-container">
+          <div className="search-container">
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+            />
+            <div className="search-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </div>
+          </div>
+          <div className="filter-controls">
+            <div className="price-slider-container">
+              <label>Price Range: R{filters.minPrice} - R{filters.maxPrice}</label>
+              <div className="price-slider">
+                <div className="slider-track" ref={sliderTrackRef}></div>
+                <input
+                  type="range"
+                  min={priceRange.min}
+                  max={priceRange.max}
+                  value={filters.minPrice}
+                  onChange={handleMinPriceChange}
+                  className="range-slider min-slider"
+                />
+                <input
+                  type="range"
+                  min={priceRange.min}
+                  max={priceRange.max}
+                  value={filters.maxPrice}
+                  onChange={handleMaxPriceChange}
+                  className="range-slider max-slider"
+                />
+              </div>
+            </div>
+            <div className="sort-container">
+              <select
+                name="sortBy"
+                value={filters.sortBy}
+                onChange={handleSortChange}
+                className="sort-select"
+              >
+                <option value="newest">Newest First</option>
+                <option value="price-low-high">Price: Low to High</option>
+                <option value="price-high-low">Price: High to Low</option>
+              </select>
+            </div>
           </div>
         </div>
         <section className="product-grid">
