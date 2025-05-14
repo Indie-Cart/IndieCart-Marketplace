@@ -656,6 +656,42 @@ app.get('/api/buyers/details', async (req, res) => {
     }
 });
 
+// API endpoint to get all 'paid' orders with products from a specific seller
+app.get('/api/seller/orders-to-ship/:sellerId', async (req, res) => {
+    try {
+        const { sellerId } = req.params;
+        // Get all paid orders that have products from this seller
+        const orders = await sql`
+            SELECT DISTINCT o.order_id, o.buyer_id, o.status
+            FROM "order" o
+            JOIN order_products op ON o.order_id = op.order_id
+            JOIN products p ON op.product_id = p.product_id
+            WHERE p.seller_id = ${sellerId} AND o.status = 'paid'
+            ORDER BY o.order_id DESC
+        `;
+
+        // For each order, get the products from this seller
+        const ordersWithProducts = [];
+        for (const order of orders) {
+            const products = await sql`
+                SELECT p.product_id, p.title, p.description, p.price, p.image_url, op.quantity
+                FROM order_products op
+                JOIN products p ON op.product_id = p.product_id
+                WHERE op.order_id = ${order.order_id} AND p.seller_id = ${sellerId}
+            `;
+            ordersWithProducts.push({
+                ...order,
+                products
+            });
+        }
+
+        res.json(ordersWithProducts);
+    } catch (error) {
+        console.error('Error fetching seller orders to ship:', error);
+        res.status(500).json({ error: 'Failed to fetch orders to ship' });
+    }
+});
+
 // Only start the server when running the file directly
 if (require.main === module) {
     app.listen(PORT, () => {

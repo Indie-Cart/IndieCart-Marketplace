@@ -14,6 +14,7 @@ function SellerDashboard() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [ordersToShip, setOrdersToShip] = useState([]);
 
   useEffect(() => {
     const fetchSellerData = async () => {
@@ -44,6 +45,11 @@ function SellerDashboard() {
 
         setSellerInfo(data.sellerInfo);
         setProducts(data.products);
+
+        // Fetch orders to ship
+        const ordersRes = await fetch(`${API_URL}/api/seller/orders-to-ship/${user.sub}`);
+        const ordersData = await ordersRes.json();
+        setOrdersToShip(ordersData);
       } catch (error) {
         console.error('Error fetching seller data:', error);
         setError('Failed to load seller dashboard');
@@ -83,6 +89,26 @@ function SellerDashboard() {
           <button onClick={() => navigate('/add-product')} className="add-product-btn">
             Add New Product
           </button>
+        </section>
+
+        <section className="orders-to-ship">
+          <h2>Orders to Ship</h2>
+          {ordersToShip.length === 0 ? (
+            <p>No paid orders to fulfill at this time.</p>
+          ) : (
+            ordersToShip.map(order => (
+              <div key={order.order_id} className="order-card">
+                <h3>Order #{order.order_id} (Buyer: {order.buyer_id})</h3>
+                <ul>
+                  {order.products.map(product => (
+                    <li key={product.product_id}>
+                      <strong>{product.title}</strong> (x{product.quantity})
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))
+          )}
         </section>
 
         <section className="product-grid">
