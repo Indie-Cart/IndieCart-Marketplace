@@ -579,31 +579,19 @@ app.post('/api/checkout', async (req, res) => {
     }
 });
 
-// Webhook endpoint to handle successful payments
-app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-    const sig = req.headers['stripe-signature'];
-    let event;
-
+// API endpoint to mark order as paid after successful payment
+app.post('/api/payment/success', async (req, res) => {
     try {
-        event = stripe.webhooks.constructEvent(req.body, sig, 'your_webhook_secret');
-    } catch (err) {
-        console.error('Webhook Error:', err.message);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-
-    if (event.type === 'checkout.session.completed') {
-        const session = event.data.object;
-        const buyerId = session.metadata.buyerId;
-
-        try {
-            await sql`UPDATE "order" SET status = 'paid' WHERE buyer_id = ${buyerId} AND status = 'cart'`;
-        } catch (error) {
-            console.error('Error updating order status:', error);
-            return res.status(500).json({ error: 'Failed to update order status' });
+        const buyerId = req.headers['x-user-id'];
+        if (!buyerId) {
+            return res.status(401).json({ error: 'User not authenticated' });
         }
+        await sql`UPDATE "order" SET status = 'paid' WHERE buyer_id = ${buyerId} AND status = 'cart'`;
+        res.status(200).json({ message: 'Order marked as paid' });
+    } catch (err) {
+        console.error('Error updating order status on payment success:', err);
+        res.status(500).json({ error: 'Failed to update order status' });
     }
-
-    res.json({ received: true });
 });
 
 //test api

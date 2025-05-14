@@ -15,6 +15,7 @@ import CartPage from './CartPage';
 import ShippingPage from './ShippingPage';
 import CheckoutPage from './CheckoutPage';
 import "./App.css";
+import axios from 'axios';
 
 function AppContent() {
   const location = useLocation();
@@ -23,12 +24,23 @@ function AppContent() {
   useEffect(() => {
     // Check for payment success in URL
     const params = new URLSearchParams(location.search);
-    if (params.get('payment') === 'success') {
-      alert('Payment successful! Thank you for your purchase.');
-      // Clear the URL parameter
-      window.history.replaceState({}, document.title, window.location.pathname);
+    if (params.get('payment') === 'success' && isAuthenticated && user) {
+      // Call backend to mark order as paid
+      axios.post('/api/payment/success', {}, {
+        headers: { 'x-user-id': user.sub }
+      })
+      .then(() => {
+        alert('Payment successful! Thank you for your purchase.');
+      })
+      .catch(() => {
+        alert('Payment was successful, but there was an issue updating your order.');
+      })
+      .finally(() => {
+        // Clear the URL parameter
+        window.history.replaceState({}, document.title, window.location.pathname);
+      });
     }
-  }, [location]);
+  }, [location, isAuthenticated, user]);
 
   return (
     <Layout>
