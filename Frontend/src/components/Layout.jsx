@@ -27,7 +27,11 @@ function Layout({ children }) {
               {isAuthenticated ? (
                 <>
                   <li><Link to="/seller-dashboard" className={isActive('/seller-dashboard') ? 'active' : ''}>Seller Dashboard</Link></li>
-                  <li><span className="user-greeting">Welcome, {user.email.split('@')[0]}</span></li>
+                  <li>
+                    <Link to="/my-account" className={`account-link ${isActive('/my-account') ? 'active' : ''}`}>
+                      My Account
+                    </Link>
+                  </li>
                   <li><button onClick={() => logout({ returnTo: window.location.origin })} className="logout-btn">Log Out</button></li>
                 </>
               ) : (
