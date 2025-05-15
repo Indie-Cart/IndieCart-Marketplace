@@ -366,3 +366,38 @@
     width: 100%;
   }
 }
+
+.hero-section {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  padding: 0 0 5rem 0;
+  margin-bottom: 2rem;
+}
+
+.hero-content {
+  text-align: center;
+  color: var(--white);
+  max-width: 700px;
+  margin: 0 auto;
+  margin-top: 0;
+}
+
+.hero-content h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 1.2rem;
+  color: var(--white);
+  letter-spacing: -1px;
+}
+
+.hero-content p {
+  font-size: 1.4rem;
+  color: #f3f4f6;
+  margin-bottom: 2.5rem;
+}
+
+/* Remove .cta-buttons and button styles since there are no buttons in this section anymore */
+.cta-buttons,
+.primary-btn,
+.secondary-btn {
+  /* display: none; */
+}

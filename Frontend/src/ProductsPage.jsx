@@ -129,8 +129,15 @@ function ProductsPage() {
 
   return (
     <main className="products-page">
+      <section className="hero-section">
+        <section className="container">
+          <article className="hero-content">
+            <h1>All Products</h1>
+            <p>Crafted with heart. Curated for you.</p>
+          </article>
+        </section>
+      </section>
       <section className="container">
-        <h1>All Products</h1>
         <div className="filters-container">
           <div className="search-container">
             <input
