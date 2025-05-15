@@ -241,6 +241,10 @@ function SellerDashboard() {
               productsToShip.map(product => (
                 <div key={product.id} className="order-card">
                   <h3>Order #{product.order_id}</h3>
+                  <div className="product-info" style={{ display: 'flex', gap: '2rem', alignItems: 'center', marginBottom: 8 }}>
+                    <span><strong>Product:</strong> {product.title}</span>
+                    <span><strong>Quantity:</strong> {product.quantity}</span>
+                  </div>
                   <div className="buyer-info">
                     <strong>Ship To:</strong><br />
                     {product.name}<br />
@@ -269,6 +273,10 @@ function SellerDashboard() {
               productsShipping.map(product => (
                 <div key={product.id} className="order-card">
                   <h3>Order #{product.order_id}</h3>
+                  <div className="product-info" style={{ display: 'flex', gap: '2rem', alignItems: 'center', marginBottom: 8 }}>
+                    <span><strong>Product:</strong> {product.title}</span>
+                    <span><strong>Quantity:</strong> {product.quantity}</span>
+                  </div>
                   <div className="buyer-info">
                     <strong>Ship To:</strong><br />
                     {product.name}<br />
@@ -291,6 +299,10 @@ function SellerDashboard() {
               productsShipped.map(product => (
                 <div key={product.id} className="order-card">
                   <h3>Order #{product.order_id}</h3>
+                  <div className="product-info" style={{ display: 'flex', gap: '2rem', alignItems: 'center', marginBottom: 8 }}>
+                    <span><strong>Product:</strong> {product.title}</span>
+                    <span><strong>Quantity:</strong> {product.quantity}</span>
+                  </div>
                   <div className="buyer-info">
                     <strong>Ship To:</strong><br />
                     {product.name}<br />
