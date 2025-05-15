@@ -84,6 +84,9 @@ function SellerDashboard() {
   }, [isAuthenticated, user, navigate, authLoading]);
 
   const handleMarkShipped = async (orderProductId) => {
+    const confirmMsg =
+      'You have 3-5 business days to ship your product to the customer. Please ensure prompt shipping and customer support. Would you like to Continue?';
+    if (!window.confirm(confirmMsg)) return;
     setMarkingIds(prev => [...prev, orderProductId]);
     try {
       const res = await fetch(`${API_URL}/api/seller/mark-product-shipped/${orderProductId}`, {
