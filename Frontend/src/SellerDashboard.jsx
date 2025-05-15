@@ -5,6 +5,7 @@ import './SellerDashboard.css';
 import Box from '@mui/material/Box';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
+import Button from '@mui/material/Button';
 
 const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:8080'
@@ -25,6 +26,14 @@ function SellerDashboard() {
   const [markingIds, setMarkingIds] = useState([]);
   const [productsShipped, setProductsShipped] = useState([]);
   const [tabIndex, setTabIndex] = useState(0);
+
+  // Add a new tab for Reports
+  const tabLabels = [
+    'Products to Ship',
+    'Being Shipped',
+    'Shipped (Fulfilled)',
+    'Reports',
+  ];
 
   useEffect(() => {
     const fetchSellerData = async () => {
@@ -136,9 +145,9 @@ function SellerDashboard() {
           <div className="dashboard-header-right" style={{ minWidth: 340, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
             <Box sx={{ borderBottom: 0, width: '100%' }}>
               <Tabs value={tabIndex} onChange={handleTabChange} aria-label="Order Tabs">
-                <Tab label="Products to Ship" />
-                <Tab label="Being Shipped" />
-                <Tab label="Shipped (Fulfilled)" />
+                {tabLabels.map((label, idx) => (
+                  <Tab key={label} label={label} />
+                ))}
               </Tabs>
             </Box>
           </div>
@@ -214,6 +223,37 @@ function SellerDashboard() {
                 </div>
               ))
             )}
+          </section>
+        )}
+        {tabIndex === 3 && (
+          <section className="reports-section" style={{ marginTop: '2rem' }}>
+            {/* Sales Trends Report */}
+            <div className="report-card" style={{ marginBottom: '2rem', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.07)', padding: '2rem' }}>
+              <h2>Sales Trends</h2>
+              {/* TODO: Insert sales trends chart here */}
+              <div style={{ marginTop: '1rem' }}>
+                <Button variant="outlined" style={{ marginRight: 8 }}>Export as CSV</Button>
+                <Button variant="outlined">Export as PDF</Button>
+              </div>
+            </div>
+            {/* Inventory Status Report */}
+            <div className="report-card" style={{ marginBottom: '2rem', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.07)', padding: '2rem' }}>
+              <h2>Inventory Status</h2>
+              {/* TODO: Insert inventory status table here */}
+              <div style={{ marginTop: '1rem' }}>
+                <Button variant="outlined" style={{ marginRight: 8 }}>Export as CSV</Button>
+                <Button variant="outlined">Export as PDF</Button>
+              </div>
+            </div>
+            {/* Custom View Report */}
+            <div className="report-card" style={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.07)', padding: '2rem' }}>
+              <h2>Custom View</h2>
+              {/* TODO: Insert custom view table/filters here */}
+              <div style={{ marginTop: '1rem' }}>
+                <Button variant="outlined" style={{ marginRight: 8 }}>Export as CSV</Button>
+                <Button variant="outlined">Export as PDF</Button>
+              </div>
+            </div>
           </section>
         )}
 
