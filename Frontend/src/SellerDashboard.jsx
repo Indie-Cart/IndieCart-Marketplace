@@ -133,12 +133,6 @@ function SellerDashboard() {
           </div>
         </header>
 
-        <section className="actions">
-          <button onClick={() => navigate('/add-product')} className="add-product-btn">
-            Add New Product
-          </button>
-        </section>
-
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
           <Tabs value={tabIndex} onChange={handleTabChange} aria-label="Order Tabs">
             <Tab label="Products to Ship" />
@@ -219,6 +213,11 @@ function SellerDashboard() {
           </section>
         )}
 
+        <section className="actions">
+          <button onClick={() => navigate('/add-product')} className="add-product-btn">
+            Add New Product
+          </button>
+        </section>
         <section className="product-grid">
           {products.length === 0 ? (
             <p className="no-products">You haven't added any products yet.</p>
