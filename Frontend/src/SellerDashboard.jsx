@@ -125,21 +125,25 @@ function SellerDashboard() {
   return (
     <main className="seller-dashboard">
       <div className="container">
-        <header className="dashboard-header">
-          <h1>Seller Dashboard</h1>
-          <div className="seller-info">
-            <h2>{sellerInfo.shop_name}</h2>
-            <p>Total Products: {sellerInfo.product_count}</p>
+        <div className="dashboard-header-flex" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '5rem', marginBottom: '2.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #e0e0e0' }}>
+          <div className="dashboard-header-left" style={{ flex: 1, minWidth: 260 }}>
+            <h1 style={{ marginBottom: '0.5rem' }}>Seller Dashboard</h1>
+            <div className="seller-info">
+              <h2>{sellerInfo.shop_name}</h2>
+              <p>Total Products: {sellerInfo.product_count}</p>
+            </div>
           </div>
-        </header>
+          <div className="dashboard-header-right" style={{ minWidth: 340, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+            <Box sx={{ borderBottom: 0, width: '100%' }}>
+              <Tabs value={tabIndex} onChange={handleTabChange} aria-label="Order Tabs">
+                <Tab label="Products to Ship" />
+                <Tab label="Being Shipped" />
+                <Tab label="Shipped (Fulfilled)" />
+              </Tabs>
+            </Box>
+          </div>
+        </div>
 
-        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-          <Tabs value={tabIndex} onChange={handleTabChange} aria-label="Order Tabs">
-            <Tab label="Products to Ship" />
-            <Tab label="Being Shipped" />
-            <Tab label="Shipped (Fulfilled)" />
-          </Tabs>
-        </Box>
         {tabIndex === 0 && (
           <section className="orders-to-ship">
             {productsToShip.length === 0 ? (
