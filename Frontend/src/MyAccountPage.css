@@ -253,3 +253,41 @@
         height: 200px;
     }
 }
+
+.mark-received-btn {
+    background: var(--primary-color);
+    color: var(--white);
+    border: none;
+    border-radius: 24px;
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 1rem;
+    min-width: 150px;
+    box-shadow: 0 1px 4px rgba(60, 60, 120, 0.08);
+    transition: box-shadow 0.15s, transform 0.15s;
+    outline: none;
+}
+
+.mark-received-btn:hover {
+    background: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(60, 60, 120, 0.10);
+    transform: translateY(-1px);
+}
+
+.mark-received-btn:disabled {
+    background: #e5e7eb;
+    color: #a1a1aa;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+.address-section {
+    height: 420px;
+    min-height: 420px;
+    max-height: 420px;
+    overflow: auto;
+    box-sizing: border-box;
+}

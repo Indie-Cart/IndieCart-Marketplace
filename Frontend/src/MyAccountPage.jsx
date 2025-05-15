@@ -23,6 +23,9 @@ function MyAccountPage() {
     const [error, setError] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editInfo, setEditInfo] = useState({});
+    const [markingOrderId, setMarkingOrderId] = useState(null);
+    const [markingProductId, setMarkingProductId] = useState(null);
+    const [infoLoading, setInfoLoading] = useState(false);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -73,6 +76,7 @@ function MyAccountPage() {
 
     const handleInfoSubmit = async (e) => {
         e.preventDefault();
+        setInfoLoading(true);
         try {
             const response = await fetch(`${API_URL}/api/buyers/update`, {
                 method: 'PUT',
@@ -91,6 +95,67 @@ function MyAccountPage() {
             }
         } catch (err) {
             setError('Failed to update information');
+        } finally {
+            setInfoLoading(false);
+        }
+    };
+
+    const handleMarkAsReceived = async (orderId) => {
+        setMarkingOrderId(orderId);
+        try {
+            const response = await fetch(`${API_URL}/api/buyer/mark-received/${orderId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-user-id': user.sub
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to mark order as shipped');
+            }
+
+            // Update the orders list with the new status
+            setOrders(prevOrders =>
+                prevOrders.map(order =>
+                    order.order_id === orderId
+                        ? { ...order, status: 'shipped' }
+                        : order
+                )
+            );
+        } catch (error) {
+            alert('Failed to mark order as shipped. Please try again.');
+        } finally {
+            setMarkingOrderId(null);
+        }
+    };
+
+    const handleMarkProductAsReceived = async (orderProductId) => {
+        setMarkingProductId(orderProductId);
+        try {
+            const response = await fetch(`${API_URL}/api/buyer/mark-product-received/${orderProductId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-user-id': user.sub
+                }
+            });
+            if (!response.ok) throw new Error('Failed to mark as shipped');
+            // Update the UI: set the product status to 'shipped'
+            setOrders(prevOrders =>
+                prevOrders.map(order => ({
+                    ...order,
+                    items: order.items.map(item =>
+                        item.id === orderProductId
+                            ? { ...item, product_status: 'shipped' }
+                            : item
+                    )
+                }))
+            );
+        } catch (error) {
+            alert('Failed to mark as shipped. Please try again.');
+        } finally {
+            setMarkingProductId(null);
         }
     };
 
@@ -185,7 +250,9 @@ function MyAccountPage() {
                                     />
                                 </div>
                                 <div className="form-actions">
-                                    <button type="submit" className="save-btn">Save Changes</button>
+                                    <button type="submit" className="save-btn" disabled={infoLoading}>
+                                        {infoLoading ? 'Saving...' : 'Save Changes'}
+                                    </button>
                                     <button type="button" className="cancel-btn" onClick={() => setIsEditing(false)}>
                                         Cancel
                                     </button>
@@ -233,10 +300,28 @@ function MyAccountPage() {
                                                         <p>Quantity: {item.quantity}</p>
                                                         <p>Price: R{item.price}</p>
                                                         <p>Status: <span className={`order-status ${item.product_status}`}>{item.product_status}</span></p>
+                                                        {item.product_status === 'shipping' && (
+                                                            <button
+                                                                className="mark-received-btn"
+                                                                onClick={() => handleMarkProductAsReceived(item.id)}
+                                                                disabled={markingProductId === item.id}
+                                                            >
+                                                                {markingProductId === item.id ? 'Marking...' : 'Mark as Received'}
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
+                                        {order.status === 'shipping' && (
+                                            <button
+                                                className="mark-received-btn"
+                                                onClick={() => handleMarkAsReceived(order.order_id)}
+                                                disabled={markingOrderId === order.order_id}
+                                            >
+                                                {markingOrderId === order.order_id ? 'Marking...' : 'Mark as Received'}
+                                            </button>
+                                        )}
                                     </div>
                                 ))}
                             </div>

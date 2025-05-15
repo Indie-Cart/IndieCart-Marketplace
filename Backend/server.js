@@ -827,25 +827,25 @@ app.get('/api/buyers/details', async (req, res) => {
     }
 });
 
-// API endpoint to get all 'paid' orders for a buyer, including product status
+// API endpoint to get all orders for a buyer, including product status
 app.get('/api/buyer/orders', async (req, res) => {
     try {
         const buyerId = req.headers['x-user-id'];
         if (!buyerId) {
             return res.status(401).json({ error: 'User not authenticated' });
         }
-        // Get all paid orders for this buyer (remove created_at)
+        // Get all orders for this buyer (not just paid ones)
         const orders = await sql`
             SELECT o.order_id, o.status, o.buyer_id
             FROM "order" o
-            WHERE o.buyer_id = ${buyerId} AND o.status = 'paid'
+            WHERE o.buyer_id = ${buyerId} AND o.status != 'cart'
             ORDER BY o.order_id DESC
         `;
         // For each order, get the products and their status
         const ordersWithItems = [];
         for (const order of orders) {
             const items = await sql`
-                SELECT op.product_id, op.quantity, op.status as product_status, p.title, p.price, p.image_url
+                SELECT op.id, op.product_id, op.quantity, op.status as product_status, p.title, p.price, p.image_url
                 FROM order_products op
                 JOIN products p ON op.product_id = p.product_id
                 WHERE op.order_id = ${order.order_id}
@@ -865,6 +865,58 @@ app.get('/api/buyer/orders', async (req, res) => {
     } catch (error) {
         console.error('Error fetching buyer orders:', error);
         res.status(500).json({ error: 'Failed to fetch buyer orders' });
+    }
+});
+
+// API endpoint for buyer to mark an order as received (shipping -> shipped)
+app.put('/api/buyer/mark-received/:orderId', async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const buyerId = req.headers['x-user-id'];
+
+        if (!buyerId) {
+            return res.status(401).json({ error: 'User not authenticated' });
+        }
+
+        // Only update if the order belongs to this buyer and is currently 'shipping'
+        const result = await sql`
+            UPDATE "order"
+            SET status = 'shipped'
+            WHERE order_id = ${orderId} 
+            AND buyer_id = ${buyerId} 
+            AND status = 'shipping'
+            RETURNING *
+        `;
+
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'Order not found, not in shipping status, or does not belong to buyer' });
+        }
+
+        res.json({ message: 'Order marked as shipped', order: result[0] });
+    } catch (error) {
+        console.error('Error marking order as shipped:', error);
+        res.status(500).json({ error: 'Failed to mark order as shipped' });
+    }
+});
+
+// API endpoint for buyer to mark a product as received (shipping -> shipped)
+app.put('/api/buyer/mark-product-received/:orderProductId', async (req, res) => {
+    try {
+        const { orderProductId } = req.params;
+        const buyerId = req.headers['x-user-id'];
+
+        const result = await sql`
+            UPDATE order_products
+            SET status = 'shipped'
+            WHERE id = ${orderProductId} AND status = 'shipping'
+            RETURNING *
+        `;
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'Order product not found or not in shipping status' });
+        }
+        res.json({ message: 'Product marked as shipped', orderProduct: result[0] });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to mark product as shipped' });
     }
 });
 
