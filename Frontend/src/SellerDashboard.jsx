@@ -7,7 +7,7 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Button from '@mui/material/Button';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -161,7 +161,7 @@ function SellerDashboard() {
   const exportSalesTrendsPDF = () => {
     const doc = new jsPDF();
     doc.text('Sales Trends', 14, 16);
-    doc.autoTable({
+    autoTable(doc, {
       head: [['Order ID', 'Total Quantity', 'Total Revenue']],
       body: salesTrends.map(r => [r.order_id, r.total_quantity, r.total_revenue]),
       startY: 22,
@@ -171,7 +171,7 @@ function SellerDashboard() {
   const exportInventoryPDF = () => {
     const doc = new jsPDF();
     doc.text('Inventory Status', 14, 16);
-    doc.autoTable({
+    autoTable(doc, {
       head: [['Product ID', 'Title', 'Price', 'Stock']],
       body: inventory.map(r => [r.product_id, r.title, r.price, r.stock]),
       startY: 22,
@@ -181,7 +181,7 @@ function SellerDashboard() {
   const exportCustomViewPDF = () => {
     const doc = new jsPDF();
     doc.text('Custom View', 14, 16);
-    doc.autoTable({
+    autoTable(doc, {
       head: [['Order ID', 'Product', 'Quantity', 'Status', 'Price', 'Buyer', 'Address', 'Contact']],
       body: customView.map(r => [
         r.order_id,
