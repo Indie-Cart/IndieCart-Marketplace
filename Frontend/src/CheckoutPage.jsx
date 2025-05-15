@@ -11,6 +11,7 @@ function CheckoutPage() {
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [payLoading, setPayLoading] = useState(false);
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuth0();
 
@@ -42,6 +43,7 @@ function CheckoutPage() {
     };
 
     const handlePayment = async () => {
+        setPayLoading(true);
         try {
             const response = await fetch(`${API_URL}/api/checkout`, {
                 method: 'POST',
@@ -63,6 +65,8 @@ function CheckoutPage() {
             window.location.href = data.redirectUrl;
         } catch (err) {
             setError(err.message);
+        } finally {
+            setPayLoading(false);
         }
     };
 
@@ -89,8 +93,9 @@ function CheckoutPage() {
                     <button
                         className="payment-btn"
                         onClick={handlePayment}
+                        disabled={payLoading}
                     >
-                        Pay with Card
+                        {payLoading ? 'Processing...' : 'Pay with Card'}
                     </button>
                 </div>
             </section>

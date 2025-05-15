@@ -21,6 +21,7 @@ function ShippingPage() {
     });
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [proceedLoading, setProceedLoading] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -72,6 +73,7 @@ function ShippingPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setProceedLoading(true);
         try {
             const response = await fetch(`${API_URL}/api/buyers/update`, {
                 method: 'PUT',
@@ -91,6 +93,8 @@ function ShippingPage() {
             navigate('/checkout');
         } catch (err) {
             setError(err.message);
+        } finally {
+            setProceedLoading(false);
         }
     };
 
@@ -188,8 +192,8 @@ function ShippingPage() {
                         />
                     </div>
 
-                    <button type="submit" className="submit-btn">
-                        Proceed to Payment
+                    <button type="submit" className="submit-btn" disabled={proceedLoading}>
+                        {proceedLoading ? 'Loading...' : 'Proceed to Payment'}
                     </button>
                 </form>
             </section>
