@@ -411,10 +411,12 @@ app.get('/api/seller/products-to-ship/:sellerId', async (req, res) => {
     try {
         const { sellerId } = req.params;
         const products = await sql`
-      SELECT op.id, op.order_id, op.product_id, op.quantity, op.status, o.buyer_id, p.title
+      SELECT op.id, op.order_id, op.product_id, op.quantity, op.status, p.title,
+        b.shipping_address, b.city, b.suburb, b.province, b.postal_code, b.name, b.number
       FROM order_products op
       JOIN products p ON op.product_id = p.product_id
       JOIN "order" o ON op.order_id = o.order_id
+      JOIN buyer b ON o.buyer_id = b.buyer_id
       WHERE p.seller_id = ${sellerId} AND op.status = 'pending' AND o.status = 'paid'
       ORDER BY op.order_id DESC
     `;
@@ -429,10 +431,12 @@ app.get('/api/seller/products-shipping/:sellerId', async (req, res) => {
     try {
         const { sellerId } = req.params;
         const products = await sql`
-      SELECT op.id, op.order_id, op.product_id, op.quantity, op.status, o.buyer_id, p.title
+      SELECT op.id, op.order_id, op.product_id, op.quantity, op.status, p.title,
+        b.shipping_address, b.city, b.suburb, b.province, b.postal_code, b.name, b.number
       FROM order_products op
       JOIN products p ON op.product_id = p.product_id
       JOIN "order" o ON op.order_id = o.order_id
+      JOIN buyer b ON o.buyer_id = b.buyer_id
       WHERE p.seller_id = ${sellerId} AND op.status = 'shipping' AND o.status = 'paid'
       ORDER BY op.order_id DESC
     `;
@@ -925,10 +929,12 @@ app.get('/api/seller/products-shipped/:sellerId', async (req, res) => {
     try {
         const { sellerId } = req.params;
         const products = await sql`
-      SELECT op.id, op.order_id, op.product_id, op.quantity, op.status, o.buyer_id, p.title
+      SELECT op.id, op.order_id, op.product_id, op.quantity, op.status, p.title,
+        b.shipping_address, b.city, b.suburb, b.province, b.postal_code, b.name, b.number
       FROM order_products op
       JOIN products p ON op.product_id = p.product_id
       JOIN "order" o ON op.order_id = o.order_id
+      JOIN buyer b ON o.buyer_id = b.buyer_id
       WHERE p.seller_id = ${sellerId} AND op.status = 'shipped' AND o.status = 'paid'
       ORDER BY op.order_id DESC
     `;

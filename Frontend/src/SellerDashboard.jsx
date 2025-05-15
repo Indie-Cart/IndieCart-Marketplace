@@ -135,12 +135,15 @@ function SellerDashboard() {
           ) : (
             productsToShip.map(product => (
               <div key={product.id} className="order-card">
-                <h3>Order #{product.order_id} (Buyer: {product.buyer_id})</h3>
-                <ul>
-                  <li>
-                    <strong>{product.title}</strong> (x{product.quantity})
-                  </li>
-                </ul>
+                <h3>Order #{product.order_id}</h3>
+                <div className="buyer-info">
+                  <strong>Ship To:</strong><br />
+                  {product.name}<br />
+                  {product.shipping_address}<br />
+                  {product.suburb}, {product.city}, {product.province}<br />
+                  {product.postal_code}<br />
+                  <strong>Contact:</strong> {product.number}
+                </div>
                 <button
                   className="mark-shipped-btn"
                   onClick={() => handleMarkShipped(product.id)}
@@ -160,12 +163,15 @@ function SellerDashboard() {
           ) : (
             productsShipping.map(product => (
               <div key={product.id} className="order-card">
-                <h3>Order #{product.order_id} (Buyer: {product.buyer_id})</h3>
-                <ul>
-                  <li>
-                    <strong>{product.title}</strong> (x{product.quantity})
-                  </li>
-                </ul>
+                <h3>Order #{product.order_id}</h3>
+                <div className="buyer-info">
+                  <strong>Ship To:</strong><br />
+                  {product.name}<br />
+                  {product.shipping_address}<br />
+                  {product.suburb}, {product.city}, {product.province}<br />
+                  {product.postal_code}<br />
+                  <strong>Contact:</strong> {product.number}
+                </div>
                 <span className="shipping-status">Shipping...</span>
               </div>
             ))
@@ -179,12 +185,15 @@ function SellerDashboard() {
           ) : (
             productsShipped.map(product => (
               <div key={product.id} className="order-card">
-                <h3>Order #{product.order_id} (Buyer: {product.buyer_id})</h3>
-                <ul>
-                  <li>
-                    <strong>{product.title}</strong> (x{product.quantity})
-                  </li>
-                </ul>
+                <h3>Order #{product.order_id}</h3>
+                <div className="buyer-info">
+                  <strong>Ship To:</strong><br />
+                  {product.name}<br />
+                  {product.shipping_address}<br />
+                  {product.suburb}, {product.city}, {product.province}<br />
+                  {product.postal_code}<br />
+                  <strong>Contact:</strong> {product.number}
+                </div>
                 <span className="shipping-status">Shipped &amp; Fulfilled</span>
               </div>
             ))
