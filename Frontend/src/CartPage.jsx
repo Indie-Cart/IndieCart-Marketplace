@@ -12,6 +12,7 @@ function CartPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [updatingItems, setUpdatingItems] = useState({});
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth0();
 
@@ -160,9 +161,13 @@ function CartPage() {
               <h3>Total: R{calculateTotal().toFixed(2)}</h3>
               <button
                 className="checkout-btn"
-                onClick={() => navigate('/shipping')}
+                onClick={async () => {
+                  setCheckoutLoading(true);
+                  navigate('/shipping');
+                }}
+                disabled={checkoutLoading}
               >
-                Proceed to Checkout
+                {checkoutLoading ? 'Loading...' : 'Proceed to Checkout'}
               </button>
             </div>
           </>
