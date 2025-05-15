@@ -920,6 +920,24 @@ app.put('/api/buyer/mark-product-received/:orderProductId', async (req, res) => 
     }
 });
 
+// Get products shipped (fulfilled) for a seller
+app.get('/api/seller/products-shipped/:sellerId', async (req, res) => {
+    try {
+        const { sellerId } = req.params;
+        const products = await sql`
+      SELECT op.id, op.order_id, op.product_id, op.quantity, op.status, o.buyer_id, p.title
+      FROM order_products op
+      JOIN products p ON op.product_id = p.product_id
+      JOIN "order" o ON op.order_id = o.order_id
+      WHERE p.seller_id = ${sellerId} AND op.status = 'shipped' AND o.status = 'paid'
+      ORDER BY op.order_id DESC
+    `;
+        res.json(products);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch shipped products' });
+    }
+});
+
 // Only start the server when running the file directly
 if (require.main === module) {
     app.listen(PORT, () => {

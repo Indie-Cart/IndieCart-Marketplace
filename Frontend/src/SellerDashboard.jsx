@@ -20,6 +20,7 @@ function SellerDashboard() {
   const [productsToShip, setProductsToShip] = useState([]);
   const [productsShipping, setProductsShipping] = useState([]);
   const [markingIds, setMarkingIds] = useState([]);
+  const [productsShipped, setProductsShipped] = useState([]);
 
   useEffect(() => {
     const fetchSellerData = async () => {
@@ -64,6 +65,9 @@ function SellerDashboard() {
         setProductsToShip(await toShipRes.json());
         const shippingRes2 = await fetch(`${API_URL}/api/seller/products-shipping/${user.sub}`);
         setProductsShipping(await shippingRes2.json());
+
+        const shippedRes = await fetch(`${API_URL}/api/seller/products-shipped/${user.sub}`);
+        setProductsShipped(await shippedRes.json());
       } catch (error) {
         console.error('Error fetching seller data:', error);
         setError('Failed to load seller dashboard');
@@ -163,6 +167,25 @@ function SellerDashboard() {
                   </li>
                 </ul>
                 <span className="shipping-status">Shipping...</span>
+              </div>
+            ))
+          )}
+        </section>
+
+        <section className="orders-to-ship">
+          <h2>Products Shipped (Fulfilled)</h2>
+          {productsShipped.length === 0 ? (
+            <p>No products have been received and fulfilled yet.</p>
+          ) : (
+            productsShipped.map(product => (
+              <div key={product.id} className="order-card">
+                <h3>Order #{product.order_id} (Buyer: {product.buyer_id})</h3>
+                <ul>
+                  <li>
+                    <strong>{product.title}</strong> (x{product.quantity})
+                  </li>
+                </ul>
+                <span className="shipping-status">Shipped &amp; Fulfilled</span>
               </div>
             ))
           )}
