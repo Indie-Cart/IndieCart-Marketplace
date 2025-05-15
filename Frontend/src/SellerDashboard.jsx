@@ -6,6 +6,16 @@ import Box from '@mui/material/Box';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Button from '@mui/material/Button';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Paper from '@mui/material/Paper';
 
 const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:8080'
@@ -26,6 +36,11 @@ function SellerDashboard() {
   const [markingIds, setMarkingIds] = useState([]);
   const [productsShipped, setProductsShipped] = useState([]);
   const [tabIndex, setTabIndex] = useState(0);
+  const [salesTrends, setSalesTrends] = useState([]);
+  const [inventory, setInventory] = useState([]);
+  const [customView, setCustomView] = useState([]);
+  const [reportsLoading, setReportsLoading] = useState(false);
+  const [reportsError, setReportsError] = useState('');
 
   // Add a new tab for Reports
   const tabLabels = [
@@ -116,6 +131,71 @@ function SellerDashboard() {
 
   const handleTabChange = (event, newValue) => {
     setTabIndex(newValue);
+  };
+
+  // Fetch reports data when Reports tab is selected
+  useEffect(() => {
+    if (tabIndex !== 3 || !user) return;
+    const fetchReports = async () => {
+      setReportsLoading(true);
+      setReportsError('');
+      try {
+        const [salesRes, invRes, customRes] = await Promise.all([
+          fetch(`${API_URL}/api/seller/reports/sales-trends/${user.sub}`),
+          fetch(`${API_URL}/api/seller/reports/inventory/${user.sub}`),
+          fetch(`${API_URL}/api/seller/reports/custom/${user.sub}`),
+        ]);
+        setSalesTrends(await salesRes.json());
+        setInventory(await invRes.json());
+        setCustomView(await customRes.json());
+      } catch (err) {
+        setReportsError('Failed to load reports');
+      } finally {
+        setReportsLoading(false);
+      }
+    };
+    fetchReports();
+  }, [tabIndex, user]);
+
+  // --- PDF Export Helpers ---
+  const exportSalesTrendsPDF = () => {
+    const doc = new jsPDF();
+    doc.text('Sales Trends', 14, 16);
+    doc.autoTable({
+      head: [['Order ID', 'Total Quantity', 'Total Revenue']],
+      body: salesTrends.map(r => [r.order_id, r.total_quantity, r.total_revenue]),
+      startY: 22,
+    });
+    doc.save('Sales_Trends.pdf');
+  };
+  const exportInventoryPDF = () => {
+    const doc = new jsPDF();
+    doc.text('Inventory Status', 14, 16);
+    doc.autoTable({
+      head: [['Product ID', 'Title', 'Price', 'Stock']],
+      body: inventory.map(r => [r.product_id, r.title, r.price, r.stock]),
+      startY: 22,
+    });
+    doc.save('Inventory_Status.pdf');
+  };
+  const exportCustomViewPDF = () => {
+    const doc = new jsPDF();
+    doc.text('Custom View', 14, 16);
+    doc.autoTable({
+      head: [['Order ID', 'Product', 'Quantity', 'Status', 'Price', 'Buyer', 'Address', 'Contact']],
+      body: customView.map(r => [
+        r.order_id,
+        r.title,
+        r.quantity,
+        r.order_product_status,
+        r.price,
+        r.name,
+        `${r.shipping_address}, ${r.suburb}, ${r.city}, ${r.province}, ${r.postal_code}`,
+        r.number
+      ]),
+      startY: 22,
+    });
+    doc.save('Custom_View.pdf');
   };
 
   // Show loading state while Auth0 is checking authentication
@@ -227,33 +307,98 @@ function SellerDashboard() {
         )}
         {tabIndex === 3 && (
           <section className="reports-section" style={{ marginTop: '2rem' }}>
-            {/* Sales Trends Report */}
-            <div className="report-card" style={{ marginBottom: '2rem', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.07)', padding: '2rem' }}>
-              <h2>Sales Trends</h2>
-              {/* TODO: Insert sales trends chart here */}
-              <div style={{ marginTop: '1rem' }}>
-                <Button variant="outlined" style={{ marginRight: 8 }}>Export as CSV</Button>
-                <Button variant="outlined">Export as PDF</Button>
-              </div>
-            </div>
-            {/* Inventory Status Report */}
-            <div className="report-card" style={{ marginBottom: '2rem', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.07)', padding: '2rem' }}>
-              <h2>Inventory Status</h2>
-              {/* TODO: Insert inventory status table here */}
-              <div style={{ marginTop: '1rem' }}>
-                <Button variant="outlined" style={{ marginRight: 8 }}>Export as CSV</Button>
-                <Button variant="outlined">Export as PDF</Button>
-              </div>
-            </div>
-            {/* Custom View Report */}
-            <div className="report-card" style={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.07)', padding: '2rem' }}>
-              <h2>Custom View</h2>
-              {/* TODO: Insert custom view table/filters here */}
-              <div style={{ marginTop: '1rem' }}>
-                <Button variant="outlined" style={{ marginRight: 8 }}>Export as CSV</Button>
-                <Button variant="outlined">Export as PDF</Button>
-              </div>
-            </div>
+            {reportsLoading ? (
+              <div>Loading reports...</div>
+            ) : reportsError ? (
+              <div style={{ color: 'red' }}>{reportsError}</div>
+            ) : (
+              <>
+                {/* Sales Trends Report */}
+                <div className="report-card" style={{ marginBottom: '2rem', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.07)', padding: '2rem' }}>
+                  <h2>Sales Trends</h2>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={salesTrends} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="order_id" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="total_revenue" fill="#1976d2" name="Revenue" />
+                      <Bar dataKey="total_quantity" fill="#82ca9d" name="Quantity" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <div style={{ marginTop: '1rem' }}>
+                    <Button variant="outlined" style={{ marginRight: 8 }} onClick={exportSalesTrendsPDF}>Export as PDF</Button>
+                  </div>
+                </div>
+                {/* Inventory Status Report */}
+                <div className="report-card" style={{ marginBottom: '2rem', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.07)', padding: '2rem' }}>
+                  <h2>Inventory Status</h2>
+                  <TableContainer component={Paper}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Product ID</TableCell>
+                          <TableCell>Title</TableCell>
+                          <TableCell>Price</TableCell>
+                          <TableCell>Stock</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {inventory.map(row => (
+                          <TableRow key={row.product_id}>
+                            <TableCell>{row.product_id}</TableCell>
+                            <TableCell>{row.title}</TableCell>
+                            <TableCell>{row.price}</TableCell>
+                            <TableCell>{row.stock}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  <div style={{ marginTop: '1rem' }}>
+                    <Button variant="outlined" style={{ marginRight: 8 }} onClick={exportInventoryPDF}>Export as PDF</Button>
+                  </div>
+                </div>
+                {/* Custom View Report */}
+                <div className="report-card" style={{ background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.07)', padding: '2rem' }}>
+                  <h2>Custom View</h2>
+                  <TableContainer component={Paper}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Order ID</TableCell>
+                          <TableCell>Product</TableCell>
+                          <TableCell>Quantity</TableCell>
+                          <TableCell>Status</TableCell>
+                          <TableCell>Price</TableCell>
+                          <TableCell>Buyer</TableCell>
+                          <TableCell>Address</TableCell>
+                          <TableCell>Contact</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {customView.map(row => (
+                          <TableRow key={row.id}>
+                            <TableCell>{row.order_id}</TableCell>
+                            <TableCell>{row.title}</TableCell>
+                            <TableCell>{row.quantity}</TableCell>
+                            <TableCell>{row.order_product_status}</TableCell>
+                            <TableCell>{row.price}</TableCell>
+                            <TableCell>{row.name}</TableCell>
+                            <TableCell>{`${row.shipping_address}, ${row.suburb}, ${row.city}, ${row.province}, ${row.postal_code}`}</TableCell>
+                            <TableCell>{row.number}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  <div style={{ marginTop: '1rem' }}>
+                    <Button variant="outlined" style={{ marginRight: 8 }} onClick={exportCustomViewPDF}>Export as PDF</Button>
+                  </div>
+                </div>
+              </>
+            )}
           </section>
         )}
 

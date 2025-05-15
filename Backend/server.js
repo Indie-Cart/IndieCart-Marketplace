@@ -944,6 +944,64 @@ app.get('/api/seller/products-shipped/:sellerId', async (req, res) => {
     }
 });
 
+// --- Seller Reports Endpoints ---
+
+// Sales Trends: aggregate by order (since no created_at), show total quantity and revenue per order
+app.get('/api/seller/reports/sales-trends/:sellerId', async (req, res) => {
+  try {
+    const { sellerId } = req.params;
+    const result = await sql`
+      SELECT o.order_id, SUM(op.quantity) AS total_quantity, SUM(op.quantity * p.price) AS total_revenue
+      FROM order_products op
+      JOIN products p ON op.product_id = p.product_id
+      JOIN "order" o ON op.order_id = o.order_id
+      WHERE p.seller_id = ${sellerId} AND o.status = 'paid'
+      GROUP BY o.order_id
+      ORDER BY o.order_id DESC
+    `;
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch sales trends' });
+  }
+});
+
+// Inventory Status: all products for the seller
+app.get('/api/seller/reports/inventory/:sellerId', async (req, res) => {
+  try {
+    const { sellerId } = req.params;
+    const result = await sql`
+      SELECT product_id, title, price, stock
+      FROM products
+      WHERE seller_id = ${sellerId}
+      ORDER BY title
+    `;
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch inventory status' });
+  }
+});
+
+// Custom View: join order_products, products, order, buyer, filter by status
+app.get('/api/seller/reports/custom/:sellerId', async (req, res) => {
+  try {
+    const { sellerId } = req.params;
+    const { status } = req.query;
+    const result = await sql`
+      SELECT op.id, o.order_id, op.product_id, op.quantity, op.status AS order_product_status, p.title, p.price, b.name, b.shipping_address, b.city, b.suburb, b.province, b.postal_code, b.number
+      FROM order_products op
+      JOIN products p ON op.product_id = p.product_id
+      JOIN "order" o ON op.order_id = o.order_id
+      JOIN buyer b ON o.buyer_id = b.buyer_id
+      WHERE p.seller_id = ${sellerId}
+      ${status ? sql`AND op.status = ${status}` : sql``}
+      ORDER BY o.order_id DESC
+    `;
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch custom report' });
+  }
+});
+
 // Only start the server when running the file directly
 if (require.main === module) {
     app.listen(PORT, () => {
