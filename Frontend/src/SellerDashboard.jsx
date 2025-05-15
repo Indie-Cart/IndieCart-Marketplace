@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth0 } from "@auth0/auth0-react";
 import './SellerDashboard.css';
+import Box from '@mui/material/Box';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
 
 const API_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:8080'
@@ -21,6 +24,7 @@ function SellerDashboard() {
   const [productsShipping, setProductsShipping] = useState([]);
   const [markingIds, setMarkingIds] = useState([]);
   const [productsShipped, setProductsShipped] = useState([]);
+  const [tabIndex, setTabIndex] = useState(0);
 
   useEffect(() => {
     const fetchSellerData = async () => {
@@ -98,6 +102,10 @@ function SellerDashboard() {
     }
   };
 
+  const handleTabChange = (event, newValue) => {
+    setTabIndex(newValue);
+  };
+
   // Show loading state while Auth0 is checking authentication
   if (authLoading) {
     return <div className="seller-dashboard loading">Loading...</div>;
@@ -128,77 +136,85 @@ function SellerDashboard() {
           </button>
         </section>
 
-        <section className="orders-to-ship">
-          <h2>Products to Ship</h2>
-          {productsToShip.length === 0 ? (
-            <p>No products to ship.</p>
-          ) : (
-            productsToShip.map(product => (
-              <div key={product.id} className="order-card">
-                <h3>Order #{product.order_id}</h3>
-                <div className="buyer-info">
-                  <strong>Ship To:</strong><br />
-                  {product.name}<br />
-                  {product.shipping_address}<br />
-                  {product.suburb}, {product.city}, {product.province}<br />
-                  {product.postal_code}<br />
-                  <strong>Contact:</strong> {product.number}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Tabs value={tabIndex} onChange={handleTabChange} aria-label="Order Tabs">
+            <Tab label="Products to Ship" />
+            <Tab label="Being Shipped" />
+            <Tab label="Shipped (Fulfilled)" />
+          </Tabs>
+        </Box>
+        {tabIndex === 0 && (
+          <section className="orders-to-ship">
+            {productsToShip.length === 0 ? (
+              <p>No products to ship.</p>
+            ) : (
+              productsToShip.map(product => (
+                <div key={product.id} className="order-card">
+                  <h3>Order #{product.order_id}</h3>
+                  <div className="buyer-info">
+                    <strong>Ship To:</strong><br />
+                    {product.name}<br />
+                    {product.shipping_address}<br />
+                    {product.suburb}, {product.city}, {product.province}<br />
+                    {product.postal_code}<br />
+                    <strong>Contact:</strong> {product.number}
+                  </div>
+                  <button
+                    className="mark-shipped-btn"
+                    onClick={() => handleMarkShipped(product.id)}
+                    disabled={markingIds.includes(product.id)}
+                  >
+                    {markingIds.includes(product.id) ? 'Marking...' : 'Mark as Shipped'}
+                  </button>
                 </div>
-                <button
-                  className="mark-shipped-btn"
-                  onClick={() => handleMarkShipped(product.id)}
-                  disabled={markingIds.includes(product.id)}
-                >
-                  {markingIds.includes(product.id) ? 'Marking...' : 'Mark as Shipped'}
-                </button>
-              </div>
-            ))
-          )}
-        </section>
-
-        <section className="orders-to-ship">
-          <h2>Products Being Shipped</h2>
-          {productsShipping.length === 0 ? (
-            <p>No products are currently being shipped.</p>
-          ) : (
-            productsShipping.map(product => (
-              <div key={product.id} className="order-card">
-                <h3>Order #{product.order_id}</h3>
-                <div className="buyer-info">
-                  <strong>Ship To:</strong><br />
-                  {product.name}<br />
-                  {product.shipping_address}<br />
-                  {product.suburb}, {product.city}, {product.province}<br />
-                  {product.postal_code}<br />
-                  <strong>Contact:</strong> {product.number}
+              ))
+            )}
+          </section>
+        )}
+        {tabIndex === 1 && (
+          <section className="orders-to-ship">
+            {productsShipping.length === 0 ? (
+              <p>No products are currently being shipped.</p>
+            ) : (
+              productsShipping.map(product => (
+                <div key={product.id} className="order-card">
+                  <h3>Order #{product.order_id}</h3>
+                  <div className="buyer-info">
+                    <strong>Ship To:</strong><br />
+                    {product.name}<br />
+                    {product.shipping_address}<br />
+                    {product.suburb}, {product.city}, {product.province}<br />
+                    {product.postal_code}<br />
+                    <strong>Contact:</strong> {product.number}
+                  </div>
+                  <span className="shipping-status">Shipping...</span>
                 </div>
-                <span className="shipping-status">Shipping...</span>
-              </div>
-            ))
-          )}
-        </section>
-
-        <section className="orders-to-ship">
-          <h2>Products Shipped (Fulfilled)</h2>
-          {productsShipped.length === 0 ? (
-            <p>No products have been received and fulfilled yet.</p>
-          ) : (
-            productsShipped.map(product => (
-              <div key={product.id} className="order-card">
-                <h3>Order #{product.order_id}</h3>
-                <div className="buyer-info">
-                  <strong>Ship To:</strong><br />
-                  {product.name}<br />
-                  {product.shipping_address}<br />
-                  {product.suburb}, {product.city}, {product.province}<br />
-                  {product.postal_code}<br />
-                  <strong>Contact:</strong> {product.number}
+              ))
+            )}
+          </section>
+        )}
+        {tabIndex === 2 && (
+          <section className="orders-to-ship">
+            {productsShipped.length === 0 ? (
+              <p>No products have been received and fulfilled yet.</p>
+            ) : (
+              productsShipped.map(product => (
+                <div key={product.id} className="order-card">
+                  <h3>Order #{product.order_id}</h3>
+                  <div className="buyer-info">
+                    <strong>Ship To:</strong><br />
+                    {product.name}<br />
+                    {product.shipping_address}<br />
+                    {product.suburb}, {product.city}, {product.province}<br />
+                    {product.postal_code}<br />
+                    <strong>Contact:</strong> {product.number}
+                  </div>
+                  <span className="shipping-status">Shipped &amp; Fulfilled</span>
                 </div>
-                <span className="shipping-status">Shipped &amp; Fulfilled</span>
-              </div>
-            ))
-          )}
-        </section>
+              ))
+            )}
+          </section>
+        )}
 
         <section className="product-grid">
           {products.length === 0 ? (
