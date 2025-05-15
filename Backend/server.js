@@ -946,7 +946,7 @@ app.get('/api/seller/products-shipped/:sellerId', async (req, res) => {
 
 // --- Seller Reports Endpoints ---
 
-// Sales Trends: aggregate by order (since no created_at), show total quantity and revenue per order
+// Sales Trends: aggregate by order (only fulfilled products), show total quantity and revenue per order
 app.get('/api/seller/reports/sales-trends/:sellerId', async (req, res) => {
   try {
     const { sellerId } = req.params;
@@ -955,7 +955,7 @@ app.get('/api/seller/reports/sales-trends/:sellerId', async (req, res) => {
       FROM order_products op
       JOIN products p ON op.product_id = p.product_id
       JOIN "order" o ON op.order_id = o.order_id
-      WHERE p.seller_id = ${sellerId} AND o.status = 'paid'
+      WHERE p.seller_id = ${sellerId} AND o.status = 'paid' AND op.status = 'shipped'
       GROUP BY o.order_id
       ORDER BY o.order_id DESC
     `;
