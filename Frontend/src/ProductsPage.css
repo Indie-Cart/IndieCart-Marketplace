@@ -2,7 +2,7 @@
 
 /* Global Styles */
 .products-page {
-  padding: 5rem 0;
+  padding-bottom: 5rem;
   min-height: 100vh;
   background-color: var(--light-bg);
 }
@@ -185,7 +185,7 @@
 .search-container {
   position: relative;
   max-width: 600px;
-  margin: 0 auto 2rem;
+  margin: 2rem auto 2rem;
   width: 100%;
 }
 
@@ -369,35 +369,33 @@
 
 .hero-section {
   background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  padding: 0 0 5rem 0;
-  margin-bottom: 2rem;
+  color: var(--white);
+  padding: 6rem 0;
+  text-align: center;
 }
 
 .hero-content {
-  text-align: center;
-  color: var(--white);
-  max-width: 700px;
+  max-width: 800px;
   margin: 0 auto;
-  margin-top: 0;
+  padding-top: 2rem;
 }
 
 .hero-content h1 {
-  font-size: 3rem;
-  font-weight: 700;
-  margin-bottom: 1.2rem;
+  font-size: 3.5rem;
   color: var(--white);
-  letter-spacing: -1px;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
 }
 
 .hero-content p {
-  font-size: 1.4rem;
-  color: #f3f4f6;
-  margin-bottom: 2.5rem;
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+  opacity: 0.9;
 }
 
-/* Remove .cta-buttons and button styles since there are no buttons in this section anymore */
+
 .cta-buttons,
 .primary-btn,
 .secondary-btn {
-  /* display: none; */
+  
 }
