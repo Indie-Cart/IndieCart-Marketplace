@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import Layout from "./components/Layout";
 import HomePage from "./HomePage";
@@ -20,6 +20,7 @@ import axios from 'axios';
 
 function AppContent() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth0();
 
   useEffect(() => {
@@ -32,16 +33,20 @@ function AppContent() {
       })
         .then(() => {
           alert('Payment successful! Thank you for your purchase.');
+          // Navigate to MyAccountPage
+          navigate('/my-account');
         })
         .catch(() => {
           alert('Payment was successful, but there was an issue updating your order.');
+          // Navigate to MyAccountPage even if there's an error
+          navigate('/my-account');
         })
         .finally(() => {
           // Clear the URL parameter
           window.history.replaceState({}, document.title, window.location.pathname);
         });
     }
-  }, [location, isAuthenticated, user]);
+  }, [location, isAuthenticated, user, navigate]);
 
   return (
     <Layout>
