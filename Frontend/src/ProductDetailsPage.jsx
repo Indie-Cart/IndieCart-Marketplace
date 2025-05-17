@@ -68,7 +68,6 @@ function ProductDetailsPage() {
       }
 
       alert('Item added to cart successfully!');
-      navigate('/cart');
     } catch (err) {
       setError(err.message);
       alert('Failed to add item to cart: ' + err.message);
@@ -214,4 +213,4 @@ function ProductDetailsPage() {
   );
 }
 
-export default ProductDetailsPage; 
+export default ProductDetailsPage;
