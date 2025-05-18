@@ -59,14 +59,54 @@
     color: var(--text-color);
 }
 
-.seller-actions button {
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    font-size: 1.1rem;
+    color: var(--text-color);
+    background-color: var(--white);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin: 1rem 0;
+}
+
+.loading-container::after {
+    content: '';
+    width: 20px;
+    height: 20px;
+    margin-left: 10px;
+    border: 2px solid var(--primary-color);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.seller-actions button,
+.product-actions button {
     margin-left: 10px;
     padding: 8px 15px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
     font-size: 0.95em;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
+    min-width: 100px;
+    position: relative;
+}
+
+.seller-actions button:disabled,
+.product-actions button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .seller-actions .view-button {
@@ -74,17 +114,21 @@
     color: var(--white);
 }
 
-.seller-actions .view-button:hover {
+.seller-actions .view-button:hover:not(:disabled) {
     background-color: var(--primary-color-dark, #2980b9);
+    transform: translateY(-2px);
 }
 
-.seller-actions .delete-button {
+.seller-actions .delete-button,
+.product-actions .delete-button {
     background-color: var(--danger-color, #e74c3c);
     color: var(--white);
 }
 
-.seller-actions .delete-button:hover {
+.seller-actions .delete-button:hover:not(:disabled),
+.product-actions .delete-button:hover:not(:disabled) {
     background-color: var(--danger-color-dark, #c0392b);
+    transform: translateY(-2px);
 }
 
 .error-message {
@@ -139,23 +183,4 @@
 .product-details span:first-child {
     font-weight: bold;
     color: var(--heading-color, #333);
-}
-
-.product-actions button {
-    margin-left: 10px;
-    padding: 8px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.95em;
-    transition: background-color 0.2s ease;
-}
-
-.product-actions .delete-button {
-    background-color: var(--danger-color, #e74c3c);
-    color: var(--white);
-}
-
-.product-actions .delete-button:hover {
-    background-color: var(--danger-color-dark, #c0392b);
 }

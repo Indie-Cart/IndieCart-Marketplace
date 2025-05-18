@@ -11,6 +11,8 @@ const AdminDashboardPage = () => {
     const [isAdmin, setIsAdmin] = useState(false);
     const [selectedSellerProducts, setSelectedSellerProducts] = useState([]);
     const [selectedSeller, setSelectedSeller] = useState(null);
+    const [loadingButtons, setLoadingButtons] = useState({});
+    const [viewingProducts, setViewingProducts] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -74,7 +76,7 @@ const AdminDashboardPage = () => {
     }, [user, isAuthenticated, isLoading, getAccessTokenSilently, navigate]);
 
     const handleViewProducts = async (sellerId) => {
-        setLoading(true);
+        setViewingProducts(true);
         setError(null);
         setSelectedSeller(sellers.find(seller => seller.seller_id === sellerId));
         try {
@@ -92,18 +94,18 @@ const AdminDashboardPage = () => {
 
             const productsData = await productsResponse.json();
             setSelectedSellerProducts(productsData);
-            setLoading(false);
         } catch (err) {
             console.error('Error fetching seller products:', err);
             setError(err.message);
-            setLoading(false);
             setSelectedSellerProducts([]);
+        } finally {
+            setViewingProducts(false);
         }
     };
 
     const handleDeleteSeller = async (sellerId) => {
         if (window.confirm(`Are you sure you want to delete seller ${sellerId} and all their products?`)) {
-            setLoading(true);
+            setLoadingButtons(prev => ({ ...prev, [sellerId]: true }));
             setError(null);
             try {
                 const token = await getAccessTokenSilently();
@@ -123,19 +125,19 @@ const AdminDashboardPage = () => {
                 setSellers(sellers.filter(seller => seller.seller_id !== sellerId));
                 setSelectedSellerProducts([]); // Clear products if the deleted seller's products were shown
                 setSelectedSeller(null);
-                setLoading(false);
 
             } catch (err) {
                 console.error('Error deleting seller:', err);
                 setError(err.message);
-                setLoading(false);
+            } finally {
+                setLoadingButtons(prev => ({ ...prev, [sellerId]: false }));
             }
         }
     };
 
     const handleDeleteProduct = async (productId) => {
         if (window.confirm(`Are you sure you want to delete product ${productId}?`)) {
-            setLoading(true);
+            setLoadingButtons(prev => ({ ...prev, [productId]: true }));
             setError(null);
             try {
                 const token = await getAccessTokenSilently();
@@ -153,18 +155,18 @@ const AdminDashboardPage = () => {
 
                 // Remove product from selected seller's product list
                 setSelectedSellerProducts(selectedSellerProducts.filter(product => product.product_id !== productId));
-                setLoading(false);
 
             } catch (err) {
                 console.error('Error deleting product:', err);
                 setError(err.message);
-                setLoading(false);
+            } finally {
+                setLoadingButtons(prev => ({ ...prev, [productId]: false }));
             }
         }
     };
 
     if (loading) {
-        return <div>Loading...</div>;
+        return <div className="loading-container">Loading...</div>;
     }
 
     return (
@@ -177,9 +179,20 @@ const AdminDashboardPage = () => {
                     <li key={seller.seller_id} className="seller-item">
                         <span>{seller.shop_name} ({seller.seller_id})</span>
                         <div className="seller-actions">
-                            <button className="view-button" onClick={() => handleViewProducts(seller.seller_id)}>View Products</button>
-                            {/* <button className="edit-button" onClick={() => handleEditSeller(seller.seller_id)}>Edit</button> */}
-                            <button className="delete-button" onClick={() => handleDeleteSeller(seller.seller_id)}>Delete</button>
+                            <button
+                                className="view-button"
+                                onClick={() => handleViewProducts(seller.seller_id)}
+                                disabled={viewingProducts}
+                            >
+                                {viewingProducts && selectedSeller?.seller_id === seller.seller_id ? 'Loading...' : 'View Products'}
+                            </button>
+                            <button
+                                className="delete-button"
+                                onClick={() => handleDeleteSeller(seller.seller_id)}
+                                disabled={loadingButtons[seller.seller_id]}
+                            >
+                                {loadingButtons[seller.seller_id] ? 'Deleting...' : 'Delete'}
+                            </button>
                         </div>
                     </li>
                 ))}
@@ -188,26 +201,35 @@ const AdminDashboardPage = () => {
             {selectedSeller && (
                 <div className="seller-products-section">
                     <h2>Products for {selectedSeller.shop_name}</h2>
-                    <ul className="product-list">
-                        {selectedSellerProducts.length > 0 ? (
-                            selectedSellerProducts.map(product => (
-                                <li key={product.product_id} className="product-item">
-                                    <img src={product.image_url} alt={product.title} />
-                                    <div className="product-details">
-                                        <span>{product.title}</span>
-                                        <span>ID: {product.product_id}</span>
-                                        <span>Stock: {product.stock}</span>
-                                    </div>
-                                    <div className="product-actions">
-                                        {/* <button className="edit-button" onClick={() => handleEditProduct(product.product_id)}>Edit</button> */}
-                                        <button className="delete-button" onClick={() => handleDeleteProduct(product.product_id)}>Delete</button>
-                                    </div>
-                                </li>
-                            ))
-                        ) : (
-                            <li>No products found for this seller.</li>
-                        )}
-                    </ul>
+                    {viewingProducts ? (
+                        <div className="loading-container">Loading products...</div>
+                    ) : (
+                        <ul className="product-list">
+                            {selectedSellerProducts.length > 0 ? (
+                                selectedSellerProducts.map(product => (
+                                    <li key={product.product_id} className="product-item">
+                                        <img src={product.image_url} alt={product.title} />
+                                        <div className="product-details">
+                                            <span>{product.title}</span>
+                                            <span>ID: {product.product_id}</span>
+                                            <span>Stock: {product.stock}</span>
+                                        </div>
+                                        <div className="product-actions">
+                                            <button
+                                                className="delete-button"
+                                                onClick={() => handleDeleteProduct(product.product_id)}
+                                                disabled={loadingButtons[product.product_id]}
+                                            >
+                                                {loadingButtons[product.product_id] ? 'Deleting...' : 'Delete'}
+                                            </button>
+                                        </div>
+                                    </li>
+                                ))
+                            ) : (
+                                <li>No products found for this seller.</li>
+                            )}
+                        </ul>
+                    )}
                 </div>
             )}
         </div>
