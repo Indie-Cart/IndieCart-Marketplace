@@ -63,6 +63,21 @@ describe('Product API Endpoints', () => {
             expect(response.body).toHaveProperty('error', 'Missing required fields');
             expect(mockSql).not.toHaveBeenCalled();
         });
+
+        it('should return 500 if there is a database error', async () => {
+            mockSql.mockRejectedValueOnce(new Error('Database error'));
+            const response = await request(app)
+                .post('/api/products')
+                .send({
+                    seller_id: 'test-seller',
+                    title: 'Test Product',
+                    description: 'Test Description',
+                    price: '10.99',
+                    stock: '100'
+                });
+            expect(response.status).toBe(500);
+            expect(response.body).toHaveProperty('error', 'Failed to add product');
+        });
     });
 
     describe('GET /api/products', () => {
