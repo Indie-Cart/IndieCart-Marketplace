@@ -432,6 +432,182 @@ describe('Cart API Endpoints', () => {
     });
 });
 
+describe('Cart API Error and Edge Cases', () => {
+    beforeEach(() => {
+        mockSql.mockReset();
+    });
+
+    // POST /api/cart/add
+    it('should return 401 if user is not authenticated (add)', async () => {
+        const response = await request(app)
+            .post('/api/cart/add')
+            .send({ productId: 1, quantity: 2 });
+        expect(response.status).toBe(401);
+        expect(response.body).toHaveProperty('error', 'User ID is required');
+    });
+
+    it('should return 500 if productId or quantity is missing (add)', async () => {
+        const response = await request(app)
+            .post('/api/cart/add')
+            .set('x-user-id', 'test-buyer')
+            .send({});
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to validate user');
+    });
+
+    it('should return 500 if product not found (add)', async () => {
+        mockSql.mockResolvedValueOnce([{ buyer_id: 'test-buyer' }]);
+        mockSql.mockResolvedValueOnce([]); // Product not found
+        const response = await request(app)
+            .post('/api/cart/add')
+            .set('x-user-id', 'test-buyer')
+            .send({ productId: 1, quantity: 2 });
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to add item to cart');
+    });
+
+    it('should return 500 if not enough stock (add)', async () => {
+        mockSql.mockResolvedValueOnce([{ buyer_id: 'test-buyer' }]);
+        mockSql.mockResolvedValueOnce([{ stock: 1 }]); // Not enough stock
+        const response = await request(app)
+            .post('/api/cart/add')
+            .set('x-user-id', 'test-buyer')
+            .send({ productId: 1, quantity: 5 });
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to add item to cart');
+    });
+
+    it('should return 500 if not enough stock for total quantity (add)', async () => {
+        mockSql.mockResolvedValueOnce([{ buyer_id: 'test-buyer' }]);
+        mockSql.mockResolvedValueOnce([{ stock: 5 }]);
+        mockSql.mockResolvedValueOnce([{ quantity: 4 }]); // Already in cart
+        const response = await request(app)
+            .post('/api/cart/add')
+            .set('x-user-id', 'test-buyer')
+            .send({ productId: 1, quantity: 3 }); // 4+3 > 5
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to add item to cart');
+    });
+
+    it('should return 500 on database error (add)', async () => {
+        mockSql.mockResolvedValueOnce([{ buyer_id: 'test-buyer' }]);
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .post('/api/cart/add')
+            .set('x-user-id', 'test-buyer')
+            .send({ productId: 1, quantity: 2 });
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to add item to cart');
+    });
+
+    // GET /api/cart
+    it('should return 401 if user is not authenticated (get)', async () => {
+        const response = await request(app).get('/api/cart');
+        expect(response.status).toBe(401);
+        expect(response.body).toHaveProperty('error', 'User ID is required');
+    });
+
+    it('should return 500 on database error (get)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .get('/api/cart')
+            .set('x-user-id', 'test-buyer');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to validate user');
+    });
+
+    // PUT /api/cart/update
+    it('should return 401 if user is not authenticated (update)', async () => {
+        const response = await request(app)
+            .put('/api/cart/update')
+            .send({ productId: 1, quantity: 2 });
+        expect(response.status).toBe(401);
+        expect(response.body).toHaveProperty('error', 'User ID is required');
+    });
+
+    it('should return 500 if productId or quantity is missing (update)', async () => {
+        const response = await request(app)
+            .put('/api/cart/update')
+            .set('x-user-id', 'test-buyer')
+            .send({});
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to validate user');
+    });
+
+    it('should return 500 if item not found in cart (update)', async () => {
+        mockSql.mockResolvedValueOnce([{ buyer_id: 'test-buyer' }]);
+        mockSql.mockResolvedValueOnce([]); // Item not found
+        const response = await request(app)
+            .put('/api/cart/update')
+            .set('x-user-id', 'test-buyer')
+            .send({ productId: 1, quantity: 2 });
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to update cart item');
+    });
+
+    it('should return 500 if not enough stock (update)', async () => {
+        mockSql.mockResolvedValueOnce([{ buyer_id: 'test-buyer' }]);
+        mockSql.mockResolvedValueOnce([{ quantity: 1, stock: 1, order_id: 1 }]);
+        const response = await request(app)
+            .put('/api/cart/update')
+            .set('x-user-id', 'test-buyer')
+            .send({ productId: 1, quantity: 5 });
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to update cart item');
+    });
+
+    it('should return 500 on database error (update)', async () => {
+        mockSql.mockResolvedValueOnce([{ buyer_id: 'test-buyer' }]);
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .put('/api/cart/update')
+            .set('x-user-id', 'test-buyer')
+            .send({ productId: 1, quantity: 2 });
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to update cart item');
+    });
+
+    // DELETE /api/cart/remove
+    it('should return 401 if user is not authenticated (remove)', async () => {
+        const response = await request(app)
+            .delete('/api/cart/remove')
+            .send({ productId: 1 });
+        expect(response.status).toBe(401);
+        expect(response.body).toHaveProperty('error', 'User ID is required');
+    });
+
+    it('should return 500 if productId is missing (remove)', async () => {
+        const response = await request(app)
+            .delete('/api/cart/remove')
+            .set('x-user-id', 'test-buyer')
+            .send({});
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to validate user');
+    });
+
+    it('should return 500 if item not found in cart (remove)', async () => {
+        mockSql.mockResolvedValueOnce([{ buyer_id: 'test-buyer' }]);
+        mockSql.mockResolvedValueOnce([]); // Item not found
+        const response = await request(app)
+            .delete('/api/cart/remove')
+            .set('x-user-id', 'test-buyer')
+            .send({ productId: 1 });
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to remove item from cart');
+    });
+
+    it('should return 500 on database error (remove)', async () => {
+        mockSql.mockResolvedValueOnce([{ buyer_id: 'test-buyer' }]);
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .delete('/api/cart/remove')
+            .set('x-user-id', 'test-buyer')
+            .send({ productId: 1 });
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to remove item from cart');
+    });
+});
+
 describe('Order Management', () => {
     it('should handle order status update', async () => {
         mockSql.mockResolvedValueOnce([{ order_id: 1 }]); // Order exists
