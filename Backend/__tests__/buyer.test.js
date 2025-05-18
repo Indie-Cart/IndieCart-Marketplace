@@ -608,6 +608,116 @@ describe('Cart API Error and Edge Cases', () => {
     });
 });
 
+describe('Buyer API Error and Edge Cases', () => {
+    beforeEach(() => {
+        mockSql.mockReset();
+    });
+
+    // GET /api/buyers/details
+    it('should return 401 if user is not authenticated (details)', async () => {
+        const response = await request(app).get('/api/buyers/details');
+        expect(response.status).toBe(401);
+        expect(response.body).toHaveProperty('error', 'User not authenticated');
+    });
+
+    it('should return 404 if buyer not found (details)', async () => {
+        mockSql.mockResolvedValueOnce([]); // Buyer not found
+        const response = await request(app)
+            .get('/api/buyers/details')
+            .set('x-user-id', 'test-buyer');
+        expect(response.status).toBe(404);
+        expect(response.body).toHaveProperty('error', 'Buyer not found');
+    });
+
+    it('should return 500 on database error (details)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .get('/api/buyers/details')
+            .set('x-user-id', 'test-buyer');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to fetch buyer details');
+    });
+
+    // PUT /api/buyers/update
+    it('should return 401 if user is not authenticated (update)', async () => {
+        const response = await request(app)
+            .put('/api/buyers/update')
+            .send({ shipping_address: '123 Test St' });
+        expect(response.status).toBe(401);
+        expect(response.body).toHaveProperty('error', 'User not authenticated');
+    });
+
+    it('should return 500 on database error (update)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .put('/api/buyers/update')
+            .set('x-user-id', 'test-buyer')
+            .send({ shipping_address: '123 Test St' });
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to update shipping details');
+    });
+
+    // GET /api/buyer/orders
+    it('should return 401 if user is not authenticated (orders)', async () => {
+        const response = await request(app).get('/api/buyer/orders');
+        expect(response.status).toBe(401);
+        expect(response.body).toHaveProperty('error', 'User not authenticated');
+    });
+
+    it('should return 500 on database error (orders)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .get('/api/buyer/orders')
+            .set('x-user-id', 'test-buyer');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to fetch buyer orders');
+    });
+
+    // PUT /api/buyer/mark-received/:orderId
+    it('should return 401 if user is not authenticated (mark-received)', async () => {
+        const response = await request(app).put('/api/buyer/mark-received/1');
+        expect(response.status).toBe(401);
+        expect(response.body).toHaveProperty('error', 'User not authenticated');
+    });
+
+    it('should return 404 if order not found or not in shipping status (mark-received)', async () => {
+        mockSql.mockResolvedValueOnce([]); // Order not found
+        const response = await request(app)
+            .put('/api/buyer/mark-received/999')
+            .set('x-user-id', 'test-buyer');
+        expect(response.status).toBe(404);
+        expect(response.body).toHaveProperty('error', 'Order not found, not in shipping status, or does not belong to buyer');
+    });
+
+    it('should return 500 on database error (mark-received)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .put('/api/buyer/mark-received/1')
+            .set('x-user-id', 'test-buyer');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to mark order as shipped');
+    });
+
+    // PUT /api/buyer/mark-product-received/:orderProductId
+    it('should return 404 if product not found or not in shipping status (mark-product-received)', async () => {
+        mockSql.mockResolvedValueOnce([]); // Product not found
+        const response = await request(app)
+            .put('/api/buyer/mark-product-received/999')
+            .set('x-user-id', 'test-buyer');
+        expect(response.status).toBe(404);
+        expect(response.body).toHaveProperty('error', 'Order product not found or not in shipping status');
+    });
+
+    it('should return 500 on database error (mark-product-received)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .put('/api/buyer/mark-product-received/1')
+            .set('x-user-id', 'test-buyer');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to mark product as shipped');
+    });
+});
+
 describe('Order Management', () => {
     it('should handle order status update', async () => {
         mockSql.mockResolvedValueOnce([{ order_id: 1 }]); // Order exists
@@ -632,5 +742,23 @@ describe('Order Management', () => {
 
         expect(response.status).toBe(404);
         expect(response.body).toEqual({});
+    });
+});
+
+describe('Uncovered Branches - Cart Remove', () => {
+    beforeEach(() => {
+        mockSql.mockReset();
+        // Mock sql.begin to call the callback with mockSql
+        mockSql.begin = async (cb) => cb(mockSql);
+    });
+
+    it('should return 400 if item not found in cart (cart remove)', async () => {
+        mockSql.mockResolvedValueOnce([]); // quantityResult is []
+        const response = await request(app)
+            .delete('/api/cart/remove')
+            .set('x-user-id', 'test-buyer')
+            .send({ productId: 123 });
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to remove item from cart');
     });
 }); 

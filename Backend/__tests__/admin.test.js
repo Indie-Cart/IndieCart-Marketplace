@@ -154,4 +154,136 @@ describe('Admin Management', () => {
         expect(response.status).toBe(404);
         expect(response.body).toEqual({});
     });
+});
+
+describe('Admin API Error and Edge Cases', () => {
+    beforeEach(() => {
+        mockSql.mockReset();
+    });
+
+    // GET /api/admin/check
+    it('should return 401 if admin ID is missing (check)', async () => {
+        const response = await request(app).get('/api/admin/check');
+        expect(response.status).toBe(401);
+        expect(response.body).toHaveProperty('error', 'Admin ID is required');
+    });
+
+    it('should return 403 if user is not admin (check)', async () => {
+        mockSql.mockResolvedValueOnce([]); // Not admin
+        const response = await request(app)
+            .get('/api/admin/check')
+            .set('x-user-id', 'not-admin');
+        expect(response.status).toBe(403);
+        expect(response.body).toHaveProperty('error', 'User is not authorized as an admin');
+    });
+
+    it('should return 500 on database error (check)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .get('/api/admin/check')
+            .set('x-user-id', 'admin');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to check admin status');
+    });
+
+    // GET /api/admin/sellers
+    it('should return 500 on database error (get sellers)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .get('/api/admin/sellers')
+            .set('x-user-id', 'admin');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to check admin status');
+    });
+
+    // DELETE /api/admin/sellers/:sellerId
+    it('should return 403 if seller not found (delete seller)', async () => {
+        mockSql.mockResolvedValueOnce([]); // No products
+        mockSql.mockResolvedValueOnce([]); // No products to delete
+        mockSql.mockResolvedValueOnce([]); // Seller not found
+        const response = await request(app)
+            .delete('/api/admin/sellers/unknown-seller')
+            .set('x-user-id', 'admin');
+        expect(response.status).toBe(403);
+    });
+
+    it('should return 500 on database error (delete seller)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .delete('/api/admin/sellers/test-seller')
+            .set('x-user-id', 'admin');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to check admin status');
+    });
+
+    // GET /api/admin/sellers/:sellerId/products
+    it('should return 500 on database error (get seller products)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .get('/api/admin/sellers/test-seller/products')
+            .set('x-user-id', 'admin');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to check admin status');
+    });
+
+    // PUT /api/admin/products/:productId
+    it('should return 403 if product not found (edit product)', async () => {
+        mockSql.mockResolvedValueOnce([]); // Product not found
+        const response = await request(app)
+            .put('/api/admin/products/999')
+            .set('x-user-id', 'admin')
+            .send({ title: 'T' });
+        expect(response.status).toBe(403);
+    });
+
+    it('should return 500 on database error (edit product)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .put('/api/admin/products/1')
+            .set('x-user-id', 'admin')
+            .send({ title: 'T' });
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to check admin status');
+    });
+
+    // DELETE /api/admin/products/:productId
+    it('should return 403 if product not found (delete product)', async () => {
+        mockSql.mockResolvedValueOnce([]); // Product not found
+        const response = await request(app)
+            .delete('/api/admin/products/999')
+            .set('x-user-id', 'admin');
+        expect(response.status).toBe(403);
+    });
+
+    it('should return 500 on database error (delete product)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .delete('/api/admin/products/1')
+            .set('x-user-id', 'admin');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to check admin status');
+    });
+});
+
+describe('Uncovered Branches - Admin Product Delete Success', () => {
+    beforeEach(() => {
+        mockSql.mockReset();
+        mockSql.begin = async (cb) => cb(mockSql);
+    });
+
+    it('should successfully delete a product and associated empty orders as admin', async () => {
+        mockSql.mockResolvedValueOnce([{ admin_id: 'test-admin' }]); // admin check
+        mockSql.mockResolvedValueOnce([{ product_id: 1 }]); // productCheck
+        mockSql.mockResolvedValueOnce([{ order_id: 123 }]); // orderIds
+        mockSql.mockResolvedValueOnce([]); // delete order_products
+        mockSql.mockResolvedValueOnce([]); // delete product
+        mockSql.mockResolvedValueOnce([{ count: '0' }]); // remainingItems for order_id 123
+        mockSql.mockResolvedValueOnce([]); // delete order
+
+        const response = await request(app)
+            .delete('/api/admin/products/1')
+            .set('x-user-id', 'test-admin');
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty('message', 'Product and associated empty orders deleted successfully');
+    });
 }); 

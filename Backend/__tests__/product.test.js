@@ -218,4 +218,106 @@ describe('Product Management', () => {
         expect(response.status).toBe(500);
         expect(response.body).toHaveProperty('error');
     });
+});
+
+describe('Product API Error and Edge Cases', () => {
+    beforeEach(() => {
+        mockSql.mockReset();
+    });
+
+    // POST /api/products
+    it('should return 400 if required fields are missing (add product)', async () => {
+        const response = await request(app)
+            .post('/api/products')
+            .send({});
+        expect(response.status).toBe(400);
+        expect(response.body).toHaveProperty('error', 'Missing required fields');
+    });
+
+    it('should return 400 if seller not found (add product)', async () => {
+        mockSql.mockResolvedValueOnce([]); // Seller not found
+        const response = await request(app)
+            .post('/api/products')
+            .send({ seller_id: 'unknown', title: 'T', description: 'D', price: 10, stock: 1 });
+        expect(response.status).toBe(400);
+        expect(response.body).toHaveProperty('error', 'Seller not found');
+    });
+
+    it('should return 500 on database error (add product)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .post('/api/products')
+            .send({ seller_id: 's1', title: 'T', description: 'D', price: 10, stock: 1 });
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to add product');
+    });
+
+    // GET /api/products/:productId
+    it('should return 404 if product not found (get product)', async () => {
+        mockSql.mockResolvedValueOnce([]); // Product not found
+        const response = await request(app)
+            .get('/api/products/999');
+        expect(response.status).toBe(404);
+        expect(response.body).toHaveProperty('error', 'Product not found');
+    });
+
+    it('should return 500 on database error (get product)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .get('/api/products/1');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to fetch product');
+    });
+
+    // PUT /api/products/:productId
+    it('should return 400 if required fields are missing (update product)', async () => {
+        const response = await request(app)
+            .put('/api/products/1')
+            .send({});
+        expect(response.status).toBe(400);
+        expect(response.body).toHaveProperty('error', 'Missing required fields');
+    });
+
+    it('should return 500 on database error (update product)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .put('/api/products/1')
+            .send({ title: 'T', description: 'D', price: 10, stock: 1 });
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to update product');
+    });
+
+    // DELETE /api/products/:productId
+    it('should return 404 if product not found (delete product)', async () => {
+        mockSql.mockResolvedValueOnce([]); // Product not found
+        const response = await request(app)
+            .delete('/api/products/999');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to delete product');
+    });
+
+    it('should return 500 on database error (delete product)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .delete('/api/products/1');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to delete product');
+    });
+
+    // GET /api/products/seller/:shopName
+    it('should return 404 if no products found for seller (get by shopName)', async () => {
+        mockSql.mockResolvedValueOnce([]); // No products found
+        const response = await request(app)
+            .get('/api/products/seller/unknown-shop');
+        expect(response.status).toBe(404);
+        expect(response.body).toHaveProperty('error', 'No products found for this seller');
+    });
+
+    it('should return 500 on database error (get by shopName)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .get('/api/products/seller/test-shop');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to fetch seller products');
+    });
 }); 

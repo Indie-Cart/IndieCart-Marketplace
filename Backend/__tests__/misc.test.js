@@ -51,4 +51,28 @@ describe('Server Configuration', () => {
             .get('/assets/test.js');
         expect(response.status).toBe(200);
     });
+});
+
+describe('Global Error Handling and Miscellaneous', () => {
+    it('should return 404 for unknown API route', async () => {
+        const response = await request(app).get('/api/does-not-exist');
+        expect(response.status).toBe(404);
+        expect(response.body).toHaveProperty('error', 'API endpoint not found');
+    });
+
+    it('should serve React app for non-API route', async () => {
+        const response = await request(app).get('/some-random-page');
+        // Should return HTML (React app), not JSON
+        expect(response.status).toBe(200);
+        expect(response.headers['content-type']).toMatch(/html/);
+    });
+
+    it('should handle CORS preflight requests', async () => {
+        const response = await request(app)
+            .options('/api/products')
+            .set('Origin', 'http://localhost:5173')
+            .set('Access-Control-Request-Method', 'POST');
+        expect([200, 204]).toContain(response.status);
+        expect(response.headers).toHaveProperty('access-control-allow-origin');
+    });
 }); 

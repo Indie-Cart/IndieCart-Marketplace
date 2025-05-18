@@ -296,4 +296,97 @@ describe('Seller Reports', () => {
         expect(response.status).toBe(200);
         expect(response.body).toEqual([{ seller_id: 'test-seller' }]);
     });
+});
+
+describe('Seller API Error and Edge Cases', () => {
+    beforeEach(() => {
+        mockSql.mockReset();
+    });
+
+    // GET /api/seller/check/:userId
+    it('should return 404 if seller not found (check)', async () => {
+        mockSql.mockResolvedValueOnce([]); // Seller not found
+        const response = await request(app)
+            .get('/api/seller/check/unknown-seller');
+        expect(response.status).toBe(404);
+        expect(response.body).toEqual({ isSeller: false });
+    });
+
+    it('should return 500 on database error (check)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .get('/api/seller/check/test-seller');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to check seller status');
+    });
+
+    // GET /api/seller/orders-to-ship/:sellerId
+    it('should return 500 on database error (orders-to-ship)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .get('/api/seller/orders-to-ship/test-seller');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to fetch orders to ship');
+    });
+
+    // GET /api/seller/orders-shipping/:sellerId
+    it('should return 500 on database error (orders-shipping)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .get('/api/seller/orders-shipping/test-seller');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to fetch shipping orders');
+    });
+
+    // GET /api/seller/products-to-ship/:sellerId
+    it('should return 500 on database error (products-to-ship)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .get('/api/seller/products-to-ship/test-seller');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to fetch products to ship');
+    });
+
+    // GET /api/seller/products-shipping/:sellerId
+    it('should return 500 on database error (products-shipping)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .get('/api/seller/products-shipping/test-seller');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to fetch products being shipped');
+    });
+
+    // PUT /api/seller/mark-shipped/:orderId
+    it('should return 404 if order not found or not in paid status (mark-shipped)', async () => {
+        mockSql.mockResolvedValueOnce([]); // Order not found
+        const response = await request(app)
+            .put('/api/seller/mark-shipped/999');
+        expect(response.status).toBe(404);
+        expect(response.body).toHaveProperty('error', 'Order not found or not in paid status');
+    });
+
+    it('should return 500 on database error (mark-shipped)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .put('/api/seller/mark-shipped/1');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to mark order as shipped');
+    });
+
+    // PUT /api/seller/mark-product-shipped/:orderProductId
+    it('should return 404 if order product not found or not pending (mark-product-shipped)', async () => {
+        mockSql.mockResolvedValueOnce([]); // Product not found
+        const response = await request(app)
+            .put('/api/seller/mark-product-shipped/999');
+        expect(response.status).toBe(404);
+        expect(response.body).toHaveProperty('error', 'Order product not found or not pending');
+    });
+
+    it('should return 500 on database error (mark-product-shipped)', async () => {
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .put('/api/seller/mark-product-shipped/1');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to mark product as shipped');
+    });
 }); 
