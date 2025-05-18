@@ -114,12 +114,9 @@ describe('Product API Endpoints', () => {
             expect(response.body[1]).toHaveProperty('product_id', 2);
         });
 
-        it('should handle database errors', async () => {
-            mockSql.mockRejectedValueOnce(new Error('Database connection failed'));
-
-            const response = await request(app)
-                .get('/api/products');
-
+        it('should return 500 if there is a database error', async () => {
+            mockSql.mockRejectedValueOnce(new Error('Database error'));
+            const response = await request(app).get('/api/products');
             expect(response.status).toBe(500);
             expect(response.body).toHaveProperty('error', 'Failed to fetch products');
         });

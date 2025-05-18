@@ -149,6 +149,12 @@ describe('Seller Extended API Endpoints', () => {
             const response = await request(app).put('/api/seller/mark-shipped/999');
             expect(response.status).toBe(404);
         });
+        it('should return 500 if there is a database error', async () => {
+            mockSql.mockRejectedValueOnce(new Error('Database error'));
+            const response = await request(app).put('/api/seller/mark-shipped/1');
+            expect(response.status).toBe(500);
+            expect(response.body).toHaveProperty('error', 'Failed to mark order as shipped');
+        });
     });
 
     describe('GET /api/seller/orders-shipping/:sellerId', () => {
@@ -191,6 +197,12 @@ describe('Seller Extended API Endpoints', () => {
             const response = await request(app).put('/api/seller/mark-product-shipped/999');
             expect(response.status).toBe(404);
         });
+        it('should return 500 if there is a database error', async () => {
+            mockSql.mockRejectedValueOnce(new Error('Database error'));
+            const response = await request(app).put('/api/seller/mark-product-shipped/1');
+            expect(response.status).toBe(500);
+            expect(response.body).toHaveProperty('error', 'Failed to mark product as shipped');
+        });
     });
 
     describe('GET /api/seller/products-shipped/:sellerId', () => {
@@ -208,6 +220,12 @@ describe('Seller Extended API Endpoints', () => {
             const response = await request(app).get('/api/seller/reports/sales-trends/seller1');
             expect(response.status).toBe(200);
             expect(Array.isArray(response.body)).toBe(true);
+        });
+        it('should return 500 if there is a database error', async () => {
+            mockSql.mockRejectedValueOnce(new Error('Database error'));
+            const response = await request(app).get('/api/seller/reports/sales-trends/seller1');
+            expect(response.status).toBe(500);
+            expect(response.body).toHaveProperty('error', 'Failed to fetch sales trends');
         });
     });
 

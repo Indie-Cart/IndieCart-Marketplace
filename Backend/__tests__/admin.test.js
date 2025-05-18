@@ -35,6 +35,16 @@ describe('Admin API Endpoints', () => {
             expect(response.status).toBe(200);
             expect(Array.isArray(response.body)).toBe(true);
         });
+
+        it('should return 500 if there is a database error', async () => {
+            mockSql.mockResolvedValueOnce([{ admin_id: 'test-admin' }]);
+            mockSql.mockRejectedValueOnce(new Error('Database error'));
+            const response = await request(app)
+                .get('/api/admin/sellers')
+                .set('x-user-id', 'test-admin');
+            expect(response.status).toBe(500);
+            expect(response.body).toHaveProperty('error', 'Failed to fetch sellers');
+        });
     });
 
     describe('GET /api/admin/check', () => {

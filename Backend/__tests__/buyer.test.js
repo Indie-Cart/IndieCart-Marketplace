@@ -165,6 +165,14 @@ describe('Buyer Extended API Endpoints', () => {
             const response = await request(app).get('/api/buyers/details');
             expect(response.status).toBe(401);
         });
+        it('should return 500 if there is a database error', async () => {
+            mockSql.mockRejectedValueOnce(new Error('Database error'));
+            const response = await request(app)
+                .get('/api/buyers/details')
+                .set('x-user-id', 'test-buyer');
+            expect(response.status).toBe(500);
+            expect(response.body).toHaveProperty('error', 'Failed to fetch buyer details');
+        });
     });
 
     describe('PUT /api/buyer/mark-received/:orderId', () => {
@@ -209,5 +217,34 @@ describe('Buyer Extended API Endpoints', () => {
             const response = await request(app).put('/api/buyer/mark-product-received/1');
             expect([401, 500]).toContain(response.status);
         });
+    });
+});
+
+describe('Cart API Endpoints', () => {
+    beforeEach(() => {
+        mockSql.mockReset();
+    });
+
+    it('should return cart items for a buyer', async () => {
+        mockSql.mockResolvedValueOnce([{ buyer_id: 'test-buyer' }]); // First mock for user validation
+        mockSql.mockResolvedValueOnce([
+            { product_id: 1, title: 'Product 1', quantity: 2, price: 10.99, stock: 5 }
+        ]);
+        const response = await request(app)
+            .get('/api/cart')
+            .set('x-user-id', 'test-buyer');
+        expect(response.status).toBe(200);
+        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body[0]).toHaveProperty('product_id');
+    });
+
+    it('should return 500 if there is a database error', async () => {
+        mockSql.mockResolvedValueOnce([{ buyer_id: 'test-buyer' }]); // First mock for user validation
+        mockSql.mockRejectedValueOnce(new Error('Database error'));
+        const response = await request(app)
+            .get('/api/cart')
+            .set('x-user-id', 'test-buyer');
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error', 'Failed to fetch cart items');
     });
 }); 
