@@ -46,7 +46,7 @@ function ProductDetailsPage() {
 
   const addToCart = async () => {
     if (!product || !isAuthenticated) return;
-    
+
     setAddingToCart(true);
     try {
       const response = await fetch(`${API_URL}/api/cart/add`, {
@@ -89,7 +89,7 @@ function ProductDetailsPage() {
         <div className="breadcrumb">
           <Link to="/">Home</Link> / <Link to="/products">Products</Link> / <span>{product.title}</span>
         </div>
-        
+
         <div className="product-details">
           <div className="product-gallery">
             <div className="main-image">
@@ -148,12 +148,12 @@ function ProductDetailsPage() {
                 {product.features?.map((feature, index) => (
                   <li key={index}>{feature}</li>
                 )) || (
-                  <>
-                    <li>High-quality materials</li>
-                    <li>Handcrafted with care</li>
-                    <li>Unique design</li>
-                  </>
-                )}
+                    <>
+                      <li>High-quality materials</li>
+                      <li>Handcrafted with care</li>
+                      <li>Unique design</li>
+                    </>
+                  )}
               </ul>
             </div>
 
@@ -161,7 +161,7 @@ function ProductDetailsPage() {
               <div className="quantity-selector">
                 <label>Quantity:</label>
                 <div className="quantity-controls">
-                  <button 
+                  <button
                     onClick={() => handleQuantityChange(quantity - 1)}
                     disabled={quantity <= 1}
                     className="quantity-btn"
@@ -176,7 +176,7 @@ function ProductDetailsPage() {
                     onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1)}
                     className="quantity-input"
                   />
-                  <button 
+                  <button
                     onClick={() => handleQuantityChange(quantity + 1)}
                     disabled={quantity >= product.stock}
                     className="quantity-btn"
@@ -186,25 +186,16 @@ function ProductDetailsPage() {
                 </div>
               </div>
 
-              <button 
+              <button
                 className="add-to-cart-btn"
                 onClick={addToCart}
                 disabled={addingToCart || product.stock === 0 || !isAuthenticated}
               >
-                {!isAuthenticated ? 'Login to Add to Cart' : 
-                 addingToCart ? 'Adding...' : 
-                 product.stock === 0 ? 'Out of Stock' : 
-                 'Add to Cart'}
+                {!isAuthenticated ? 'Login to Add to Cart' :
+                  addingToCart ? 'Adding...' :
+                    product.stock === 0 ? 'Out of Stock' :
+                      'Add to Cart'}
               </button>
-
-              <div className="product-actions">
-                <button className="wishlist-btn">
-                  <span>♡</span> Add to Wishlist
-                </button>
-                <button className="share-btn">
-                  <span>↗</span> Share
-                </button>
-              </div>
             </div>
           </div>
         </div>

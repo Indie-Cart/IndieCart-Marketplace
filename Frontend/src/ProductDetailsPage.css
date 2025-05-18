@@ -2,20 +2,20 @@
 
 /* Global Styles */
 .product-details-page {
-  padding: 2rem 0;
+  padding: 1rem 0;
   background-color: var(--light-bg);
   min-height: 100vh;
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1000px;
   margin: 0 auto;
   padding: 0 20px;
 }
 
 /* Breadcrumb */
 .breadcrumb {
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   color: var(--text-color);
   font-size: 0.9rem;
 }
@@ -33,11 +33,13 @@
 .product-details {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 3rem;
+  gap: 2rem;
   background: var(--white);
   border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
+  padding: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
 /* Product Gallery */
@@ -98,15 +100,15 @@
 .product-info {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .product-header {
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .product-header h1 {
-  font-size: 2rem;
+  font-size: 1.75rem;
   margin: 0 0 0.5rem 0;
   color: var(--text-color);
   line-height: 1.2;
@@ -160,13 +162,13 @@
 /* Description and Features */
 .product-description,
 .product-features {
-  margin: 1.5rem 0;
+  margin: 1rem 0;
 }
 
 .product-description h2,
 .product-features h2 {
-  font-size: 1.2rem;
-  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
   color: var(--text-color);
 }
 
@@ -198,8 +200,8 @@
 
 /* Purchase Section */
 .purchase-section {
-  margin-top: 2rem;
-  padding-top: 2rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
   border-top: 1px solid #eee;
 }
 
@@ -290,36 +292,9 @@
   cursor: not-allowed;
 }
 
-.product-actions {
-  display: flex;
-  gap: 1rem;
-}
-
-.wishlist-btn,
-.share-btn {
-  flex: 1;
-  padding: 0.75rem;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  color: var(--text-color);
-}
-
-.wishlist-btn:hover,
-.share-btn:hover {
-  background: #f8f9fa;
-  border-color: #ccc;
-}
-
 /* Loading and Error States */
-.loading, .error {
+.loading,
+.error {
   text-align: center;
   padding: 2rem;
   font-size: 1.2rem;
@@ -330,28 +305,30 @@
   color: #e74c3c;
 }
 
+/* Remove wishlist and share button styles */
+.wishlist-btn,
+.share-btn {
+  display: none;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .product-details {
     grid-template-columns: 1fr;
-    gap: 2rem;
+    gap: 1.5rem;
     padding: 1rem;
   }
-  
+
   .product-header h1 {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
   }
-  
+
   .price {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
   }
-  
-  .product-actions {
-    flex-direction: column;
-  }
-  
+
   .thumbnail {
     width: 60px;
     height: 60px;
   }
-} 
+}
