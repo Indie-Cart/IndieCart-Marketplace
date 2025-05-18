@@ -1,0 +1,192 @@
+@import '../colors.css';
+/* Import color variables */
+
+.admin-dashboard-container {
+    padding: 20px;
+    max-width: 1200px;
+    /* Match container width */
+    margin: 0 auto;
+    font-family: 'Inter', sans-serif;
+    /* Use Inter font */
+    color: var(--text-color);
+    /* Use text color variable */
+    background-color: var(--light-bg);
+    /* Use light background variable */
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.admin-dashboard-container h1 {
+    text-align: center;
+    color: var(--primary-color);
+    /* Use primary color variable */
+    margin-bottom: 30px;
+    font-size: 2em;
+    border-bottom: 2px solid var(--primary-color);
+    /* Use primary color for border */
+    padding-bottom: 10px;
+}
+
+.admin-dashboard-container h2 {
+    color: var(--text-color);
+    /* Use text color variable */
+    margin-top: 40px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color, #bdc3c7);
+    /* Use border color variable or default */
+    padding-bottom: 8px;
+    font-size: 1.5em;
+}
+
+.seller-list,
+.product-list {
+    list-style: none;
+    padding: 0;
+}
+
+.seller-item {
+    background-color: var(--white);
+    /* Use white background variable */
+    border: 1px solid var(--border-color, #e0e0e0);
+    /* Use border color variable or default */
+    margin-bottom: 15px;
+    padding: 20px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease-in-out;
+}
+
+.seller-item:hover {
+    transform: translateY(-3px);
+}
+
+.seller-item span {
+    flex-grow: 1;
+    margin-right: 20px;
+    font-size: 1.1em;
+    color: var(--text-color);
+    /* Use text color variable */
+}
+
+.seller-actions button {
+    margin-left: 10px;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.95em;
+    transition: background-color 0.2s ease;
+}
+
+.seller-actions .view-button {
+    background-color: var(--primary-color);
+    /* Use primary color for view button */
+    color: var(--white);
+    /* Use white color variable */
+}
+
+.seller-actions .view-button:hover {
+    background-color: var(--primary-color-dark, #2980b9);
+    /* Use a darker primary color variable or default */
+}
+
+.seller-actions .delete-button {
+    background-color: var(--danger-color, #e74c3c);
+    /* Use a danger color variable or default */
+    color: var(--white);
+    /* Use white color variable */
+}
+
+.seller-actions .delete-button:hover {
+    background-color: var(--danger-color-dark, #c0392b);
+    /* Use a darker danger color variable or default */
+}
+
+.error-message {
+    color: var(--danger-color-dark, #c0392b);
+    /* Use a darker danger color variable or default */
+    background-color: var(--danger-bg, #f8d7da);
+    /* Use a danger background color variable or default */
+    border: 1px solid var(--danger-border, #f5c6cb);
+    /* Use a danger border color variable or default */
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Styles for Product List */
+.seller-products-section {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color, #bdc3c7);
+    /* Use border color variable or default */
+}
+
+.product-item {
+    background-color: var(--white);
+    /* Use white background variable */
+    border: 1px solid var(--border-color, #e0e0e0);
+    /* Use border color variable or default */
+    margin-bottom: 15px;
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+}
+
+.product-item img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    margin-right: 20px;
+    border-radius: 5px;
+    border: 1px solid var(--border-color, #eee);
+    /* Use border color variable or default */
+}
+
+.product-details {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    margin-right: 20px;
+}
+
+.product-details span {
+    font-size: 1em;
+    color: var(--text-color);
+    /* Use text color variable */
+    margin-bottom: 5px;
+}
+
+.product-details span:first-child {
+    font-weight: bold;
+    color: var(--heading-color, #333);
+    /* Use a heading color variable or default */
+}
+
+.product-actions button {
+    margin-left: 10px;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.95em;
+    transition: background-color 0.2s ease;
+}
+
+.product-actions .delete-button {
+    background-color: var(--danger-color, #e74c3c);
+    /* Use a danger color variable or default */
+    color: var(--white);
+    /* Use white color variable */
+}
+
+.product-actions .delete-button:hover {
+    background-color: var(--danger-color-dark, #c0392b);
+    /* Use a darker danger color variable or default */
+}
