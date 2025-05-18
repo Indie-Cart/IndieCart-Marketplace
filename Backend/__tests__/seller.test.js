@@ -115,4 +115,19 @@ describe('Seller API Endpoints', () => {
             expect(response.body).toEqual({ isSeller: false });
         });
     });
+});
+
+describe('Seller Orders API Endpoints', () => {
+    beforeEach(() => {
+        mockSql.mockReset();
+    });
+
+    describe('GET /api/seller/orders-to-ship/:sellerId', () => {
+        it('should return orders to ship for a seller', async () => {
+            mockSql.mockResolvedValueOnce([{ order_id: 1, status: 'pending' }]);
+            const response = await request(app).get('/api/seller/orders-to-ship/seller1');
+            expect(response.status).toBe(200);
+            expect(Array.isArray(response.body)).toBe(true);
+        });
+    });
 }); 

@@ -152,4 +152,31 @@ describe('Product API Endpoints', () => {
             expect(response.body).toHaveProperty('error', 'Failed to fetch product');
         });
     });
+
+    describe('GET /api/products/seller/:shopName', () => {
+        it('should return products for a given seller', async () => {
+            mockSql.mockResolvedValueOnce([
+                { product_id: 1, seller_id: 'seller1', title: 'Product 1', description: 'Desc', price: 10, stock: 5, image_url: '', shop_name: 'Shop1' }
+            ]);
+            const response = await request(app).get('/api/products/seller/Shop1');
+            expect(response.status).toBe(200);
+            expect(Array.isArray(response.body)).toBe(true);
+        });
+        it('should return 404 if no products found', async () => {
+            mockSql.mockResolvedValueOnce([]);
+            const response = await request(app).get('/api/products/seller/UnknownShop');
+            expect(response.status).toBe(404);
+        });
+    });
+
+    describe('PUT /api/products/:productId', () => {
+        it('should update a product', async () => {
+            mockSql.mockResolvedValueOnce([{ product_id: 1 }]); // Product exists
+            mockSql.mockResolvedValueOnce([{ product_id: 1, title: 'Updated' }]); // Update result
+            const response = await request(app)
+                .put('/api/products/1')
+                .send({ title: 'Updated', description: 'Desc', price: 20, stock: 10 });
+            expect(response.status).toBe(200);
+        });
+    });
 }); 

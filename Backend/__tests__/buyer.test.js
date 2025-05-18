@@ -127,4 +127,22 @@ describe('Buyer API Endpoints', () => {
             expect(response.body).toHaveProperty('error', 'Failed to validate user');
         });
     });
+});
+
+describe('Buyer Orders API Endpoints', () => {
+    beforeEach(() => {
+        mockSql.mockReset();
+    });
+
+    describe('GET /api/buyer/orders', () => {
+        it('should return orders for a buyer', async () => {
+            mockSql.mockResolvedValueOnce([{ buyer_id: 'test-buyer' }]); // Buyer exists
+            mockSql.mockResolvedValueOnce([{ order_id: 1, status: 'shipped' }]); // Orders
+            const response = await request(app)
+                .get('/api/buyer/orders')
+                .set('x-user-id', 'test-buyer');
+            expect(response.status).toBe(200);
+            expect(Array.isArray(response.body)).toBe(true);
+        });
+    });
 }); 
