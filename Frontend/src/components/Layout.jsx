@@ -1,12 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import './Layout.css';
 
 function Layout({ children }) {
-  const { isAuthenticated, user, loginWithRedirect, logout } = useAuth0();
+  const { isAuthenticated, user, isLoading, getAccessTokenSilently, loginWithRedirect, logout } = useAuth0();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check admin status when authentication status changes
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!isAuthenticated || isLoading) {
+        setIsAdmin(false);
+        return;
+      }
+      try {
+        const token = await getAccessTokenSilently();
+        const adminCheckResponse = await fetch('/api/admin/check', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'x-user-id': user.sub
+          }
+        });
+
+        if (adminCheckResponse.ok) {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch (error) {
+        console.error('Error checking admin status in layout:', error);
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, [isAuthenticated, isLoading, user, getAccessTokenSilently]);
 
   const isActive = (path) => {
     if (path === '/') {
@@ -31,6 +62,10 @@ function Layout({ children }) {
               <li><Link to="/products" className={isActive('/products') ? 'active' : ''}>Browse Products</Link></li>
               {isAuthenticated ? (
                 <>
+                  {/* Admin Dashboard link - visible only if isAdmin is true */}
+                  {isAdmin && (
+                    <li><Link to="/admin-dashboard" className={isActive('/admin-dashboard') ? 'active' : ''}>Admin Dashboard</Link></li>
+                  )}
                   <li><Link to="/seller-dashboard" className={isActive('/seller-dashboard') ? 'active' : ''}>Seller Dashboard</Link></li>
                   <li><Link to="/about" className={isActive('/about') ? 'active' : ''}>About</Link></li>
                   <li><button onClick={() => logout({ returnTo: window.location.origin })} className="logout-btn">Log Out</button></li>

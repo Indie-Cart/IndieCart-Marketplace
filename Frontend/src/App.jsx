@@ -15,6 +15,7 @@ import CartPage from './CartPage';
 import ShippingPage from './ShippingPage';
 import CheckoutPage from './CheckoutPage';
 import MyAccountPage from './MyAccountPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 import "./App.css";
 import axios from 'axios';
 
@@ -64,6 +65,7 @@ function AppContent() {
         <Route path="/shipping" element={<ShippingPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/my-account" element={<MyAccountPage />} />
+        <Route path="/admin-dashboard" element={<AdminDashboardPage />} />
       </Routes>
     </Layout>
   );

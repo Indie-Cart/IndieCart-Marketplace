@@ -63,8 +63,33 @@ const validateUser = async (req, res, next) => {
     }
 };
 
+// Middleware to check if user is an admin
+const isAdmin = async (req, res, next) => {
+    const adminId = req.headers['x-user-id'];
+
+    if (!adminId) {
+        return res.status(401).json({ error: 'Admin ID is required' });
+    }
+
+    try {
+        const result = await sql`SELECT 1 FROM admin WHERE admin_id = ${adminId}`;
+
+        if (result.length === 0) {
+            return res.status(403).json({ error: 'User is not authorized as an admin' });
+        }
+
+        next();
+    } catch (err) {
+        console.error('Error checking admin status:', err);
+        res.status(500).json({ error: 'Failed to check admin status' });
+    }
+};
+
 // Apply the validateUser middleware to cart routes
 app.use('/api/cart', validateUser);
+
+// Apply isAdmin middleware to all admin routes
+app.use('/api/admin', isAdmin);
 
 // API endpoint to add new buyer
 app.post('/api/buyers', async (req, res) => {
@@ -948,9 +973,9 @@ app.get('/api/seller/products-shipped/:sellerId', async (req, res) => {
 
 // Sales Trends: aggregate by order (only fulfilled products), show total quantity and revenue per order
 app.get('/api/seller/reports/sales-trends/:sellerId', async (req, res) => {
-  try {
-    const { sellerId } = req.params;
-    const result = await sql`
+    try {
+        const { sellerId } = req.params;
+        const result = await sql`
       SELECT o.order_id, SUM(op.quantity) AS total_quantity, SUM(op.quantity * p.price) AS total_revenue
       FROM order_products op
       JOIN products p ON op.product_id = p.product_id
@@ -959,34 +984,34 @@ app.get('/api/seller/reports/sales-trends/:sellerId', async (req, res) => {
       GROUP BY o.order_id
       ORDER BY o.order_id DESC
     `;
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch sales trends' });
-  }
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch sales trends' });
+    }
 });
 
 // Inventory Status: all products for the seller
 app.get('/api/seller/reports/inventory/:sellerId', async (req, res) => {
-  try {
-    const { sellerId } = req.params;
-    const result = await sql`
+    try {
+        const { sellerId } = req.params;
+        const result = await sql`
       SELECT product_id, title, price, stock
       FROM products
       WHERE seller_id = ${sellerId}
       ORDER BY title
     `;
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch inventory status' });
-  }
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch inventory status' });
+    }
 });
 
 // Custom View: join order_products, products, order, buyer, filter by status
 app.get('/api/seller/reports/custom/:sellerId', async (req, res) => {
-  try {
-    const { sellerId } = req.params;
-    const { status } = req.query;
-    const result = await sql`
+    try {
+        const { sellerId } = req.params;
+        const { status } = req.query;
+        const result = await sql`
       SELECT op.id, o.order_id, op.product_id, op.quantity, op.status AS order_product_status, p.title, p.price, b.name, b.shipping_address, b.city, b.suburb, b.province, b.postal_code, b.number
       FROM order_products op
       JOIN products p ON op.product_id = p.product_id
@@ -996,11 +1021,131 @@ app.get('/api/seller/reports/custom/:sellerId', async (req, res) => {
       ${status ? sql`AND op.status = ${status}` : sql``}
       ORDER BY o.order_id DESC
     `;
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch custom report' });
-  }
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch custom report' });
+    }
 });
+
+// --- Admin Endpoints ---
+
+// API endpoint to check if user is an admin
+app.get('/api/admin/check', (req, res) => {
+    // If this endpoint is reached, the isAdmin middleware has already verified the user
+    res.status(200).json({ isAdmin: true });
+});
+
+// API endpoint to get all sellers (Admin only)
+app.get('/api/admin/sellers', async (req, res) => {
+    try {
+        const sellers = await sql`SELECT seller_id, shop_name FROM seller`;
+        res.json(sellers);
+    } catch (err) {
+        console.error('Error fetching sellers for admin:', err);
+        res.status(500).json({ error: 'Failed to fetch sellers' });
+    }
+});
+
+// API endpoint to delete a seller (Admin only)
+app.delete('/api/admin/sellers/:sellerId', isAdmin, async (req, res) => {
+    try {
+        const { sellerId } = req.params;
+
+        await sql.begin(async (sql) => {
+            // Find product IDs for the seller
+            const productIds = await sql`SELECT product_id FROM products WHERE seller_id = ${sellerId}`;
+            const idsToDelete = productIds.map(row => row.product_id);
+
+            // Use WHERE IN only if there are products to delete
+            if (idsToDelete.length > 0) {
+                // Delete entries in order_products that reference these products
+                // Use UNNEST for potentially safer handling of array parameters with @vercel/postgres
+                await sql`DELETE FROM order_products WHERE product_id IN (SELECT * FROM unnest(${idsToDelete}::int[]))`;
+
+                // Delete products associated with the seller
+                await sql`DELETE FROM products WHERE seller_id = ${sellerId}`;
+            }
+
+            // Delete the seller
+            const result = await sql`DELETE FROM seller WHERE seller_id = ${sellerId} RETURNING *`;
+
+            if (result.length === 0) {
+                // If the seller wasn't found, rollback the transaction
+                // Throw a specific error that can be caught below to send a 404
+                throw new Error('Seller not found');
+            }
+        });
+
+        res.json({ message: 'Seller deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting seller:', err);
+        // Check for the specific 'Seller not found' error to return 404
+        if (err.message === 'Seller not found') {
+            return res.status(404).json({ error: err.message });
+        }
+        // For any other error, return 500
+        res.status(500).json({ error: 'Failed to delete seller' });
+    }
+});
+
+// API endpoint to get all products for a seller (Admin only)
+app.get('/api/admin/sellers/:sellerId/products', async (req, res) => {
+    try {
+        const { sellerId } = req.params;
+        const products = await sql`SELECT product_id, title, description, price, stock, image_url FROM products WHERE seller_id = ${sellerId}`;
+        res.json(products);
+    } catch (err) {
+        console.error('Error fetching seller products for admin:', err);
+        res.status(500).json({ error: 'Failed to fetch seller products' });
+    }
+});
+
+// API endpoint to edit a product (Admin only)
+app.put('/api/admin/products/:productId', async (req, res) => {
+    try {
+        const { productId } = req.params;
+        const { title, description, price, stock, image_url } = req.body;
+
+        const result = await sql`
+            UPDATE products
+            SET
+                title = COALESCE(${title}, title),
+                description = COALESCE(${description}, description),
+                price = COALESCE(${price}, price),
+                stock = COALESCE(${stock}, stock),
+                image_url = COALESCE(${image_url}, image_url)
+            WHERE product_id = ${productId}
+            RETURNING *`;
+
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'Product not found' });
+        }
+
+        res.json({ message: 'Product updated successfully', product: result[0] });
+    } catch (err) {
+        console.error('Error editing product:', err);
+        res.status(500).json({ error: 'Failed to edit product' });
+    }
+});
+
+// API endpoint to delete a product (Admin only)
+app.delete('/api/admin/products/:productId', async (req, res) => {
+    try {
+        const { productId } = req.params;
+        const result = await sql`DELETE FROM products WHERE product_id = ${productId} RETURNING *`;
+
+        if (result.length === 0) {
+            return res.status(404).json({ error: 'Product not found' });
+        }
+
+        res.json({ message: 'Product deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting product:', err);
+        res.status(500).json({ error: 'Failed to delete product' });
+    }
+});
+
+// --- Admin Endpoints End ---
 
 // Only start the server when running the file directly
 if (require.main === module) {

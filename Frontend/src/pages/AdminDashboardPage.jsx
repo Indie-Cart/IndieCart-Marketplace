@@ -163,23 +163,9 @@ const AdminDashboardPage = () => {
         }
     };
 
-    // Placeholder for edit functionality
-    const handleEditSeller = (sellerId) => {
-        console.log(`Edit seller ${sellerId}`);
-        // TODO: Implement seller edit functionality (e.g., open modal with form)
-    };
-
-    // Placeholder for edit functionality
-    const handleEditProduct = (productId) => {
-        console.log(`Edit product ${productId}`);
-        // TODO: Implement product edit functionality (e.g., open modal with form)
-    };
-
     if (loading) {
         return <div>Loading...</div>;
     }
-
-    // No need to explicitly check !isAdmin here because the useEffect redirects if not admin
 
     return (
         <div className="admin-dashboard-container">
