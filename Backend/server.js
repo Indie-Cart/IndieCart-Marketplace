@@ -8,6 +8,7 @@ const stripe = require('stripe')('sk_test_51RKJnzCSe9LtgDWXmINjc7FwgUSuhRR9rD1dN
 const sql = require('./db.js');
 
 // Configure multer for memory storage
+
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Configure CORS
