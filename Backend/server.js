@@ -863,10 +863,11 @@ app.get('/api/buyer/orders', async (req, res) => {
         if (!buyerId) {
             return res.status(401).json({ error: 'User not authenticated' });
         }
-        // Get all orders for this buyer (not just paid ones)
+        // Get all orders for this buyer that still have items and are not cart
         const orders = await sql`
-            SELECT o.order_id, o.status, o.buyer_id
+            SELECT DISTINCT o.order_id, o.status, o.buyer_id
             FROM "order" o
+            JOIN order_products op ON o.order_id = op.order_id
             WHERE o.buyer_id = ${buyerId} AND o.status != 'cart'
             ORDER BY o.order_id DESC
         `;
@@ -1058,9 +1059,14 @@ app.delete('/api/admin/sellers/:sellerId', isAdmin, async (req, res) => {
 
             // Use WHERE IN only if there are products to delete
             if (idsToDelete.length > 0) {
-                // Delete entries in order_products that reference these products
-                // Use UNNEST for potentially safer handling of array parameters with @vercel/postgres
-                await sql`DELETE FROM order_products WHERE product_id IN (SELECT * FROM unnest(${idsToDelete}::int[]))`;
+                // Delete entries in order_products that reference these products, ONLY if the order status is 'cart' or 'shipped'
+                await sql`
+                    DELETE FROM order_products op
+                    USING "order" o
+                    WHERE op.product_id IN (SELECT * FROM unnest(${idsToDelete}::int[]))
+                      AND op.order_id = o.order_id
+                      AND o.status IN ('cart', 'shipped')
+                `;
 
                 // Delete products associated with the seller
                 await sql`DELETE FROM products WHERE seller_id = ${sellerId}`;
@@ -1129,18 +1135,56 @@ app.put('/api/admin/products/:productId', async (req, res) => {
 });
 
 // API endpoint to delete a product (Admin only)
-app.delete('/api/admin/products/:productId', async (req, res) => {
+app.delete('/api/admin/products/:productId', isAdmin, async (req, res) => {
     try {
         const { productId } = req.params;
-        const result = await sql`DELETE FROM products WHERE product_id = ${productId} RETURNING *`;
 
-        if (result.length === 0) {
-            return res.status(404).json({ error: 'Product not found' });
-        }
+        await sql.begin(async (sql) => {
+            // First check if product exists
+            const productCheck = await sql`SELECT 1 FROM products WHERE product_id = ${productId}`;
 
-        res.json({ message: 'Product deleted successfully' });
+            if (productCheck.length === 0) {
+                throw new Error('Product not found');
+            }
+
+            // Get all order IDs that have this product
+            const orderIds = await sql`
+                SELECT DISTINCT order_id 
+                FROM order_products 
+                WHERE product_id = ${productId}
+            `;
+
+            // Delete entries in order_products that reference this product
+            await sql`
+                DELETE FROM order_products
+                WHERE product_id = ${productId}
+            `;
+
+            // Delete the product
+            await sql`DELETE FROM products WHERE product_id = ${productId}`;
+
+            // For each affected order, check if it's now empty and delete if it is
+            for (const { order_id } of orderIds) {
+                const remainingItems = await sql`
+                    SELECT COUNT(*) as count 
+                    FROM order_products 
+                    WHERE order_id = ${order_id}
+                `;
+
+                if (remainingItems[0].count === '0') {
+                    await sql`DELETE FROM "order" WHERE order_id = ${order_id}`;
+                }
+            }
+        });
+
+        res.json({ message: 'Product and associated empty orders deleted successfully' });
     } catch (err) {
         console.error('Error deleting product:', err);
+        console.error('Full error details:', JSON.stringify(err, null, 2));
+
+        if (err.message === 'Product not found') {
+            return res.status(404).json({ error: err.message });
+        }
         res.status(500).json({ error: 'Failed to delete product' });
     }
 });
