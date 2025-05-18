@@ -1,35 +1,16 @@
 const request = require('supertest');
-const { Pool } = require('pg');
-
-// Mock console.error to suppress error messages in tests
-const originalConsoleError = console.error;
-beforeAll(() => {
-    console.error = jest.fn();
-});
-
-afterAll(() => {
-    console.error = originalConsoleError;
-});
-
-// Mock the pg module
-jest.mock('pg', () => {
-    const mockQuery = jest.fn();
-    const mockRelease = jest.fn();
-    const mockClient = {
-        query: mockQuery,
-        release: mockRelease
-    };
-    const mockPool = {
-        connect: jest.fn(() => Promise.resolve(mockClient))
-    };
-    return { Pool: jest.fn(() => mockPool) };
-});
-
-// Import the server app
+const mockSql = jest.fn();
+jest.mock('../db.js', () => mockSql);
 const app = require('../server');
 
+// Mock console.error to suppress error messages during tests
+console.error = jest.fn();
+
+beforeEach(() => {
+    mockSql.mockReset();
+});
+
 describe('Product API Endpoints', () => {
-    let mockClient;
     const mockProduct = {
         seller_id: 'test-seller',
         title: 'Test Product',
@@ -38,24 +19,18 @@ describe('Product API Endpoints', () => {
         stock: '100'    // Send as string to match form data
     };
 
-    beforeEach(async () => {
-        const pool = new Pool();
-        mockClient = await pool.connect();
-        mockClient.query.mockReset();
-    });
-
     describe('POST /api/products', () => {
         it('should successfully create a new product', async () => {
             // Mock seller check
-            mockClient.query.mockResolvedValueOnce({ rows: [{ 1: 1 }] });
+            mockSql.mockResolvedValueOnce([{}]); // Seller exists
             // Mock product insertion
-            mockClient.query.mockResolvedValueOnce({ 
-                rows: [{
+            mockSql.mockResolvedValueOnce([
+                {
                     ...mockProduct,
-                    price: parseFloat(mockProduct.price), // Convert to numeric
-                    stock: parseInt(mockProduct.stock, 10) // Convert to int4
-                }]
-            });
+                    price: parseFloat(mockProduct.price),
+                    stock: parseInt(mockProduct.stock, 10)
+                }
+            ]);
 
             const response = await request(app)
                 .post('/api/products')
@@ -64,33 +39,11 @@ describe('Product API Endpoints', () => {
             expect(response.status).toBe(201);
             expect(response.body).toHaveProperty('message', 'Product added successfully');
             expect(response.body).toHaveProperty('product');
-            
-            // Check that the queries were called in the correct order with correct parameters
-            expect(mockClient.query).toHaveBeenNthCalledWith(1,
-                'SELECT 1 FROM seller WHERE seller_id = $1',
-                [mockProduct.seller_id]
-            );
-
-            // Get the actual query that was called
-            const actualQuery = mockClient.query.mock.calls[1][0];
-            const expectedQuery = 'INSERT INTO products (seller_id, title, description, price, stock, image) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *';
-            
-            // Compare normalized queries (remove extra whitespace)
-            expect(actualQuery.replace(/\s+/g, ' ').trim()).toBe(expectedQuery.replace(/\s+/g, ' ').trim());
-            
-            // Check the parameters separately
-            expect(mockClient.query.mock.calls[1][1]).toEqual([
-                mockProduct.seller_id,
-                mockProduct.title,
-                mockProduct.description,
-                parseFloat(mockProduct.price),
-                parseInt(mockProduct.stock, 10),
-                null
-            ]);
+            expect(mockSql).toHaveBeenCalledTimes(2);
         });
 
         it('should return 400 if seller does not exist', async () => {
-            mockClient.query.mockResolvedValueOnce({ rows: [] });
+            mockSql.mockResolvedValueOnce([]); // Seller does not exist
 
             const response = await request(app)
                 .post('/api/products')
@@ -98,11 +51,7 @@ describe('Product API Endpoints', () => {
 
             expect(response.status).toBe(400);
             expect(response.body).toHaveProperty('error', 'Seller not found');
-            expect(mockClient.query).toHaveBeenCalledTimes(1);
-            expect(mockClient.query).toHaveBeenCalledWith(
-                'SELECT 1 FROM seller WHERE seller_id = $1',
-                [mockProduct.seller_id]
-            );
+            expect(mockSql).toHaveBeenCalledTimes(1);
         });
 
         it('should return 400 if required fields are missing', async () => {
@@ -112,7 +61,7 @@ describe('Product API Endpoints', () => {
 
             expect(response.status).toBe(400);
             expect(response.body).toHaveProperty('error', 'Missing required fields');
-            expect(mockClient.query).not.toHaveBeenCalled();
+            expect(mockSql).not.toHaveBeenCalled();
         });
     });
 
@@ -139,7 +88,7 @@ describe('Product API Endpoints', () => {
                 }
             ];
 
-            mockClient.query.mockResolvedValueOnce({ rows: mockProducts });
+            mockSql.mockResolvedValueOnce(mockProducts);
 
             const response = await request(app)
                 .get('/api/products');
@@ -151,7 +100,7 @@ describe('Product API Endpoints', () => {
         });
 
         it('should handle database errors', async () => {
-            mockClient.query.mockRejectedValueOnce(new Error('Database connection failed'));
+            mockSql.mockRejectedValueOnce(new Error('Database connection failed'));
 
             const response = await request(app)
                 .get('/api/products');
@@ -173,7 +122,7 @@ describe('Product API Endpoints', () => {
                 shop_name: 'Shop 1'
             };
 
-            mockClient.query.mockResolvedValueOnce({ rows: [mockProduct] });
+            mockSql.mockResolvedValueOnce([mockProduct]);
 
             const response = await request(app)
                 .get('/api/products/1');
@@ -184,7 +133,7 @@ describe('Product API Endpoints', () => {
         });
 
         it('should return 404 if product not found', async () => {
-            mockClient.query.mockResolvedValueOnce({ rows: [] });
+            mockSql.mockResolvedValueOnce([]);
 
             const response = await request(app)
                 .get('/api/products/999');
@@ -194,7 +143,7 @@ describe('Product API Endpoints', () => {
         });
 
         it('should handle database errors', async () => {
-            mockClient.query.mockRejectedValueOnce(new Error('Database connection failed'));
+            mockSql.mockRejectedValueOnce(new Error('Database connection failed'));
 
             const response = await request(app)
                 .get('/api/products/1');

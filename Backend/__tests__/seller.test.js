@@ -1,52 +1,27 @@
 const request = require('supertest');
+const mockSql = jest.fn();
+jest.mock('../db.js', () => mockSql);
 const app = require('../server');
-const { Pool } = require('pg');
 
 // Mock console.error to suppress error messages during tests
 console.error = jest.fn();
 
-// Mock pg module
-jest.mock('pg', () => {
-    const mockQuery = jest.fn();
-    const mockRelease = jest.fn();
-    const mockClient = {
-        query: mockQuery,
-        release: mockRelease
-    };
-    const mockPool = {
-        connect: jest.fn().mockResolvedValue(mockClient)
-    };
-    return { Pool: jest.fn(() => mockPool) };
-});
-
 describe('Seller API Endpoints', () => {
-    let mockClient;
-    let mockQuery;
     const mockSeller = {
         seller_id: 'test-seller-id',
         shop_name: 'Test Shop'
     };
 
     beforeEach(() => {
-        // Create a new mock query function for each test
-        mockQuery = jest.fn();
-        const mockRelease = jest.fn();
-        mockClient = {
-            query: mockQuery,
-            release: mockRelease
-        };
-        
-        // Update the pool's connect to return our mock client
-        const pool = new Pool();
-        pool.connect.mockResolvedValue(mockClient);
+        mockSql.mockReset();
     });
 
     describe('POST /api/sellers', () => {
         it('should successfully register a new seller', async () => {
             // Mock the seller check query
-            mockQuery.mockResolvedValueOnce({ rows: [] });
+            mockSql.mockResolvedValueOnce([]); // No seller exists
             // Mock the insert query
-            mockQuery.mockResolvedValueOnce({ rows: [] });
+            mockSql.mockResolvedValueOnce([]);
 
             const response = await request(app)
                 .post('/api/sellers')
@@ -54,12 +29,12 @@ describe('Seller API Endpoints', () => {
 
             expect(response.status).toBe(201);
             expect(response.body).toEqual({ message: 'Successfully registered as a seller' });
-            expect(mockQuery).toHaveBeenCalledTimes(2);
+            expect(mockSql).toHaveBeenCalledTimes(2);
         });
 
         it('should return 400 if seller already exists', async () => {
             // Mock the seller check query to return existing seller
-            mockQuery.mockResolvedValueOnce({ rows: [{ seller_id: mockSeller.seller_id }] });
+            mockSql.mockResolvedValueOnce([{ seller_id: mockSeller.seller_id }]);
 
             const response = await request(app)
                 .post('/api/sellers')
@@ -67,7 +42,7 @@ describe('Seller API Endpoints', () => {
 
             expect(response.status).toBe(400);
             expect(response.body).toEqual({ error: 'You are already registered as a seller' });
-            expect(mockQuery).toHaveBeenCalledTimes(1);
+            expect(mockSql).toHaveBeenCalledTimes(1);
         });
 
         it('should return 400 if required fields are missing', async () => {
@@ -89,23 +64,21 @@ describe('Seller API Endpoints', () => {
                     description: 'Test Description',
                     price: 10.99,
                     stock: 5,
-                    image: Buffer.from('test-image')
+                    image_url: 'test-image-url'
                 }
             ];
 
             // Mock seller check query
-            mockQuery.mockResolvedValueOnce({
-                rows: [{
+            mockSql.mockResolvedValueOnce([
+                {
                     seller_id: mockSeller.seller_id,
                     shop_name: mockSeller.shop_name,
                     product_count: 1
-                }]
-            });
+                }
+            ]);
 
             // Mock products query
-            mockQuery.mockResolvedValueOnce({
-                rows: mockProducts
-            });
+            mockSql.mockResolvedValueOnce(mockProducts);
 
             const response = await request(app)
                 .get(`/api/seller/check/${mockSeller.seller_id}`);
@@ -125,7 +98,7 @@ describe('Seller API Endpoints', () => {
                         description: 'Test Description',
                         price: 10.99,
                         stock: 5,
-                        image: expect.any(String)
+                        image_url: expect.any(String)
                     })
                 ])
             });
@@ -133,7 +106,7 @@ describe('Seller API Endpoints', () => {
 
         it('should return 404 if user is not a seller', async () => {
             // Mock seller check query to return no results
-            mockQuery.mockResolvedValueOnce({ rows: [] });
+            mockSql.mockResolvedValueOnce([]);
 
             const response = await request(app)
                 .get(`/api/seller/check/${mockSeller.seller_id}`);

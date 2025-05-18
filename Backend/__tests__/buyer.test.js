@@ -1,35 +1,16 @@
 const request = require('supertest');
-const { Pool } = require('pg');
-
-// Mock console.error to suppress error messages in tests
-const originalConsoleError = console.error;
-beforeAll(() => {
-    console.error = jest.fn();
-});
-
-afterAll(() => {
-    console.error = originalConsoleError;
-});
-
-// Mock the pg module
-jest.mock('pg', () => {
-    const mockQuery = jest.fn();
-    const mockRelease = jest.fn();
-    const mockClient = {
-        query: mockQuery,
-        release: mockRelease
-    };
-    const mockPool = {
-        connect: jest.fn(() => Promise.resolve(mockClient))
-    };
-    return { Pool: jest.fn(() => mockPool) };
-});
-
-// Import the server app
+const mockSql = jest.fn();
+jest.mock('../db.js', () => mockSql);
 const app = require('../server');
 
+// Mock console.error to suppress error messages during tests
+console.error = jest.fn();
+
+beforeEach(() => {
+    mockSql.mockReset();
+});
+
 describe('Buyer API Endpoints', () => {
-    let mockClient;
     const mockBuyer = {
         buyer_id: 'test-buyer'
     };
@@ -44,15 +25,9 @@ describe('Buyer API Endpoints', () => {
         number: '1234567890'
     };
 
-    beforeEach(async () => {
-        const pool = new Pool();
-        mockClient = await pool.connect();
-        mockClient.query.mockReset();
-    });
-
     describe('POST /api/buyers', () => {
         it('should successfully add new buyer', async () => {
-            mockClient.query.mockResolvedValueOnce({ rows: [] });
+            mockSql.mockResolvedValueOnce({ rows: [] });
 
             const response = await request(app)
                 .post('/api/buyers')
@@ -72,7 +47,7 @@ describe('Buyer API Endpoints', () => {
         });
 
         it('should handle database errors', async () => {
-            mockClient.query.mockRejectedValueOnce(new Error('Database error'));
+            mockSql.mockRejectedValueOnce(new Error('Database error'));
 
             const response = await request(app)
                 .post('/api/buyers')
@@ -85,7 +60,7 @@ describe('Buyer API Endpoints', () => {
 
     describe('PUT /api/buyers/update', () => {
         it('should successfully update buyer shipping details', async () => {
-            mockClient.query.mockResolvedValueOnce({ rows: [] });
+            mockSql.mockResolvedValueOnce({ rows: [] });
 
             const response = await request(app)
                 .put('/api/buyers/update')
@@ -106,7 +81,7 @@ describe('Buyer API Endpoints', () => {
         });
 
         it('should handle database errors', async () => {
-            mockClient.query.mockRejectedValueOnce(new Error('Database error'));
+            mockSql.mockRejectedValueOnce(new Error('Database error'));
 
             const response = await request(app)
                 .put('/api/buyers/update')
@@ -121,18 +96,16 @@ describe('Buyer API Endpoints', () => {
     describe('validateUser middleware', () => {
         it('should create buyer if they do not exist', async () => {
             // Mock buyer check - not found
-            mockClient.query.mockResolvedValueOnce({ rows: [] });
+            mockSql.mockResolvedValueOnce({ rows: [] });
             // Mock buyer creation
-            mockClient.query.mockResolvedValueOnce({ rows: [] });
-            // Mock cart check
-            mockClient.query.mockResolvedValueOnce({ rows: [] });
+            mockSql.mockResolvedValueOnce({ rows: [] });
 
             const response = await request(app)
                 .get('/api/cart') // Using cart endpoint as it uses validateUser middleware
                 .set('x-user-id', mockBuyer.buyer_id);
 
             expect(response.status).not.toBe(401);
-            expect(mockClient.query).toHaveBeenCalledTimes(3);
+            expect(mockSql).toHaveBeenCalledTimes(2);
         });
 
         it('should return 401 if user ID is missing', async () => {
@@ -144,7 +117,7 @@ describe('Buyer API Endpoints', () => {
         });
 
         it('should handle database errors', async () => {
-            mockClient.query.mockRejectedValueOnce(new Error('Database error'));
+            mockSql.mockRejectedValueOnce(new Error('Database error'));
 
             const response = await request(app)
                 .get('/api/cart')
