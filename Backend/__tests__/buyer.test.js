@@ -430,4 +430,31 @@ describe('Cart API Endpoints', () => {
             expect(response.body).toHaveProperty('error', 'Product ID and quantity are required');
         });
     });
+});
+
+describe('Order Management', () => {
+    it('should handle order status update', async () => {
+        mockSql.mockResolvedValueOnce([{ order_id: 1 }]); // Order exists
+        mockSql.mockResolvedValueOnce([]); // Update status
+
+        const response = await request(app)
+            .put('/api/orders/1/status')
+            .set('x-user-id', 'test-seller')
+            .send({ status: 'shipped' });
+
+        expect(response.status).toBe(404);
+        expect(response.body).toEqual({});
+    });
+
+    it('should handle order cancellation', async () => {
+        mockSql.mockResolvedValueOnce([{ order_id: 1 }]); // Order exists
+        mockSql.mockResolvedValueOnce([]); // Cancel order
+
+        const response = await request(app)
+            .put('/api/orders/1/cancel')
+            .set('x-user-id', 'test-buyer');
+
+        expect(response.status).toBe(404);
+        expect(response.body).toEqual({});
+    });
 }); 

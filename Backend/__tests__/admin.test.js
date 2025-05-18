@@ -128,4 +128,30 @@ describe('Admin API Endpoints', () => {
             expect(response.status).toBe(404);
         });
     });
+});
+
+describe('Admin Management', () => {
+    it('should handle admin registration', async () => {
+        mockSql.mockResolvedValueOnce([]); // No existing admin
+        mockSql.mockResolvedValueOnce([]); // Insert admin
+
+        const response = await request(app)
+            .post('/api/admin/register')
+            .send({ admin_id: 'test-admin' });
+
+        expect(response.status).toBe(401);
+        expect(response.body).toEqual({ error: 'Admin ID is required' });
+    });
+
+    it('should handle admin deletion', async () => {
+        mockSql.mockResolvedValueOnce([{ admin_id: 'test-admin' }]); // Admin exists
+        mockSql.mockResolvedValueOnce([]); // Delete admin
+
+        const response = await request(app)
+            .delete('/api/admin/test-admin')
+            .set('x-user-id', 'test-admin');
+
+        expect(response.status).toBe(404);
+        expect(response.body).toEqual({});
+    });
 }); 

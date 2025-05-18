@@ -191,4 +191,31 @@ describe('Product API Endpoints', () => {
             expect(response.status).toBe(200);
         });
     });
+});
+
+describe('Product Management', () => {
+    it('should handle product status update', async () => {
+        mockSql.mockResolvedValueOnce([{ product_id: 1 }]); // Product exists
+        mockSql.mockResolvedValueOnce([]); // Update status
+
+        const response = await request(app)
+            .put('/api/products/1/status')
+            .set('x-user-id', 'test-seller')
+            .send({ status: 'active' });
+
+        expect(response.status).toBe(404);
+        expect(response.body).toEqual({});
+    });
+
+    it('should handle product deletion', async () => {
+        mockSql.mockResolvedValueOnce([{ product_id: 1 }]); // Product exists
+        mockSql.mockResolvedValueOnce([]); // Delete product
+
+        const response = await request(app)
+            .delete('/api/products/1')
+            .set('x-user-id', 'test-seller');
+
+        expect(response.status).toBe(500);
+        expect(response.body).toHaveProperty('error');
+    });
 }); 

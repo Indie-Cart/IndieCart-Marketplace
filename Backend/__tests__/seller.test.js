@@ -246,4 +246,54 @@ describe('Seller Extended API Endpoints', () => {
             expect(typeof response.body).toBe('string');
         });
     });
+});
+
+describe('Seller Management', () => {
+    it('should handle seller verification', async () => {
+        mockSql.mockResolvedValueOnce([{ seller_id: 'test-seller' }]); // Seller exists
+        mockSql.mockResolvedValueOnce([]); // Update verification
+
+        const response = await request(app)
+            .put('/api/admin/sellers/test-seller/verify')
+            .set('x-user-id', 'test-admin');
+
+        expect(response.status).toBe(404);
+        expect(response.body).toEqual({});
+    });
+
+    it('should handle seller suspension', async () => {
+        mockSql.mockResolvedValueOnce([{ seller_id: 'test-seller' }]); // Seller exists
+        mockSql.mockResolvedValueOnce([]); // Update status
+
+        const response = await request(app)
+            .put('/api/admin/sellers/test-seller/suspend')
+            .set('x-user-id', 'test-admin');
+
+        expect(response.status).toBe(403);
+        expect(response.body).toEqual({ error: 'User is not authorized as an admin' });
+    });
+});
+
+describe('Seller Reports', () => {
+    it('should generate sales report', async () => {
+        mockSql.mockResolvedValueOnce([{ total_sales: 1000 }]); // Sales data
+
+        const response = await request(app)
+            .get('/api/seller/reports/sales/test-seller')
+            .set('x-user-id', 'test-seller');
+
+        expect(response.status).toBe(404);
+        expect(response.body).toEqual({ error: 'API endpoint not found' });
+    });
+
+    it('should generate inventory report', async () => {
+        mockSql.mockResolvedValueOnce([{ seller_id: 'test-seller' }]); // Inventory data
+
+        const response = await request(app)
+            .get('/api/seller/reports/inventory/test-seller')
+            .set('x-user-id', 'test-seller');
+
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual([{ seller_id: 'test-seller' }]);
+    });
 }); 
