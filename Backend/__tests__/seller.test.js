@@ -130,4 +130,102 @@ describe('Seller Orders API Endpoints', () => {
             expect(Array.isArray(response.body)).toBe(true);
         });
     });
+});
+
+describe('Seller Extended API Endpoints', () => {
+    beforeEach(() => {
+        mockSql.mockReset();
+    });
+
+    describe('PUT /api/seller/mark-shipped/:orderId', () => {
+        it('should mark an order as shipped', async () => {
+            mockSql.mockResolvedValueOnce([{ order_id: 1, status: 'shipping' }]);
+            const response = await request(app).put('/api/seller/mark-shipped/1');
+            expect(response.status).toBe(200);
+            expect(response.body).toHaveProperty('message', 'Order marked as shipping');
+        });
+        it('should return 404 if order not found or not in paid status', async () => {
+            mockSql.mockResolvedValueOnce([]);
+            const response = await request(app).put('/api/seller/mark-shipped/999');
+            expect(response.status).toBe(404);
+        });
+    });
+
+    describe('GET /api/seller/orders-shipping/:sellerId', () => {
+        it('should return shipping orders for a seller', async () => {
+            mockSql.mockResolvedValueOnce([{ order_id: 1, buyer_id: 'b1', status: 'shipping' }]);
+            mockSql.mockResolvedValueOnce([{ product_id: 1, title: 'P', description: 'D', price: 10, image_url: '', quantity: 2 }]);
+            const response = await request(app).get('/api/seller/orders-shipping/seller1');
+            expect(response.status).toBe(200);
+            expect(Array.isArray(response.body)).toBe(true);
+        });
+    });
+
+    describe('GET /api/seller/products-to-ship/:sellerId', () => {
+        it('should return products to ship for a seller', async () => {
+            mockSql.mockResolvedValueOnce([{ product_id: 1, title: 'P', description: 'D', price: 10, image_url: '', quantity: 2 }]);
+            const response = await request(app).get('/api/seller/products-to-ship/seller1');
+            expect(response.status).toBe(200);
+            expect(Array.isArray(response.body)).toBe(true);
+        });
+    });
+
+    describe('GET /api/seller/products-shipping/:sellerId', () => {
+        it('should return products currently shipping for a seller', async () => {
+            mockSql.mockResolvedValueOnce([{ product_id: 1, title: 'P', description: 'D', price: 10, image_url: '', quantity: 2 }]);
+            const response = await request(app).get('/api/seller/products-shipping/seller1');
+            expect(response.status).toBe(200);
+            expect(Array.isArray(response.body)).toBe(true);
+        });
+    });
+
+    describe('PUT /api/seller/mark-product-shipped/:orderProductId', () => {
+        it('should mark a product as shipped', async () => {
+            mockSql.mockResolvedValueOnce([{ id: 1, status: 'shipped' }]);
+            const response = await request(app).put('/api/seller/mark-product-shipped/1');
+            expect(response.status).toBe(200);
+            expect(response.body).toHaveProperty('message', 'Product marked as shipping');
+        });
+        it('should return 404 if product not found or not in shipping status', async () => {
+            mockSql.mockResolvedValueOnce([]);
+            const response = await request(app).put('/api/seller/mark-product-shipped/999');
+            expect(response.status).toBe(404);
+        });
+    });
+
+    describe('GET /api/seller/products-shipped/:sellerId', () => {
+        it('should return shipped products for a seller', async () => {
+            mockSql.mockResolvedValueOnce([{ product_id: 1, title: 'P', description: 'D', price: 10, image_url: '', quantity: 2 }]);
+            const response = await request(app).get('/api/seller/products-shipped/seller1');
+            expect(response.status).toBe(200);
+            expect(Array.isArray(response.body)).toBe(true);
+        });
+    });
+
+    describe('GET /api/seller/reports/sales-trends/:sellerId', () => {
+        it('should return sales trends for a seller', async () => {
+            mockSql.mockResolvedValueOnce([{ order_id: 1, total_quantity: 2, total_revenue: 20 }]);
+            const response = await request(app).get('/api/seller/reports/sales-trends/seller1');
+            expect(response.status).toBe(200);
+            expect(Array.isArray(response.body)).toBe(true);
+        });
+    });
+
+    describe('GET /api/seller/reports/inventory/:sellerId', () => {
+        it('should return inventory for a seller', async () => {
+            mockSql.mockResolvedValueOnce([{ product_id: 1, title: 'P', stock: 10 }]);
+            const response = await request(app).get('/api/seller/reports/inventory/seller1');
+            expect(response.status).toBe(200);
+            expect(Array.isArray(response.body)).toBe(true);
+        });
+    });
+
+    describe('GET /api/seller/reports/custom/:sellerId', () => {
+        it('should return custom report for a seller', async () => {
+            mockSql.mockResolvedValueOnce([{ custom: 'data' }]);
+            const response = await request(app).get('/api/seller/reports/custom/seller1');
+            expect(response.status).toBe(200);
+            expect(typeof response.body).toBe('string');
+        });
+    });
 }); 

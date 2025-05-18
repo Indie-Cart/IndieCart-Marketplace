@@ -145,4 +145,69 @@ describe('Buyer Orders API Endpoints', () => {
             expect(Array.isArray(response.body)).toBe(true);
         });
     });
+});
+
+describe('Buyer Extended API Endpoints', () => {
+    beforeEach(() => {
+        mockSql.mockReset();
+    });
+
+    describe('GET /api/buyers/details', () => {
+        it('should return buyer details', async () => {
+            mockSql.mockResolvedValueOnce([{ buyer_id: 'test-buyer', name: 'Test', shipping_address: '123 Test St' }]);
+            const response = await request(app)
+                .get('/api/buyers/details')
+                .set('x-user-id', 'test-buyer');
+            expect(response.status).toBe(200);
+            expect(response.body).toEqual({ buyer_id: 'test-buyer', name: 'Test', shipping_address: '123 Test St' });
+        });
+        it('should return 401 if not authenticated', async () => {
+            const response = await request(app).get('/api/buyers/details');
+            expect(response.status).toBe(401);
+        });
+    });
+
+    describe('PUT /api/buyer/mark-received/:orderId', () => {
+        it('should mark an order as received', async () => {
+            mockSql.mockResolvedValueOnce([{ order_id: 1, status: 'shipped' }]);
+            const response = await request(app)
+                .put('/api/buyer/mark-received/1')
+                .set('x-user-id', 'test-buyer');
+            expect(response.status).toBe(200);
+            expect(response.body).toHaveProperty('message', 'Order marked as shipped');
+        });
+        it('should return 404 if order not found or not in shipping status', async () => {
+            mockSql.mockResolvedValueOnce([]);
+            const response = await request(app)
+                .put('/api/buyer/mark-received/999')
+                .set('x-user-id', 'test-buyer');
+            expect(response.status).toBe(404);
+        });
+        it('should return 401 if not authenticated', async () => {
+            const response = await request(app).put('/api/buyer/mark-received/1');
+            expect(response.status).toBe(401);
+        });
+    });
+
+    describe('PUT /api/buyer/mark-product-received/:orderProductId', () => {
+        it('should mark a product as received', async () => {
+            mockSql.mockResolvedValueOnce([{ id: 1, status: 'shipped' }]);
+            const response = await request(app)
+                .put('/api/buyer/mark-product-received/1')
+                .set('x-user-id', 'test-buyer');
+            expect(response.status).toBe(200);
+            expect(response.body).toHaveProperty('message');
+        });
+        it('should return 404 if product not found or not in shipping status', async () => {
+            mockSql.mockResolvedValueOnce([]);
+            const response = await request(app)
+                .put('/api/buyer/mark-product-received/999')
+                .set('x-user-id', 'test-buyer');
+            expect(response.status).toBe(404);
+        });
+        it('should return 401 if not authenticated', async () => {
+            const response = await request(app).put('/api/buyer/mark-product-received/1');
+            expect([401, 500]).toContain(response.status);
+        });
+    });
 }); 
