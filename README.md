@@ -43,11 +43,10 @@ npm run build
 ```bash
 npm start 
 ```
-## 🧪 Testing
+## 🧪 Testing ![Code Coverage](https://img.shields.io/badge/coverage-80.33%25-brightgreen)
 - Backend tests implemented using Jest
 - Automated test runs on push and pull requests to main
 - Go to Github actions, Node.js CI, Choost last test, test (18.x), expand "run tests" scroll down to see coverage
-![Code Coverage](https://img.shields.io/badge/coverage-67.5%25-brightgreen)
 
 ## 🎯 Future Roadmap
 
