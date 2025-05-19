@@ -85,120 +85,91 @@ function ProductDetailsPage() {
 
   return (
     <main className="product-details-page">
-      <div className="container">
-        <div className="breadcrumb">
-          <Link to="/">Home</Link> / <Link to="/products">Products</Link> / <span>{product.title}</span>
-        </div>
-
-        <div className="product-details">
-          <div className="product-gallery">
-            <div className="main-image">
-              {images[selectedImage] ? (
-                <img src={images[selectedImage]} alt={product.title} />
-              ) : (
-                <div className="no-image">No Image Available</div>
-              )}
-            </div>
-            {images.length > 1 && (
-              <div className="thumbnail-gallery">
-                {images.map((image, index) => (
-                  <button
-                    key={index}
-                    className={`thumbnail ${selectedImage === index ? 'active' : ''}`}
-                    onClick={() => setSelectedImage(index)}
-                  >
-                    <img src={image} alt={`${product.title} - view ${index + 1}`} />
-                  </button>
-                ))}
-              </div>
+      <div className="breadcrumb">
+        <Link to="/">Home</Link> / <Link to="/products">Products</Link> / <span>{product.title}</span>
+      </div>
+      <div className="product-details-container">
+        <section className="product-image-section">
+          <div className="product-main-image">
+            {images[selectedImage] ? (
+              <img src={images[selectedImage]} alt={product.title} />
+            ) : (
+              <div className="no-image">No Image Available</div>
             )}
           </div>
-
-          <div className="product-info">
-            <div className="product-header">
-              <h1>{product.title}</h1>
-              <div className="product-meta">
-                <Link
-                  to={`/seller/${encodeURIComponent(product.shop_name || 'Unknown Shop')}`}
-                  className="seller-link"
+          {images.length > 1 && (
+            <div className="product-thumbnails">
+              {images.map((img, idx) => (
+                <button
+                  key={idx}
+                  className={`product-thumbnail${selectedImage === idx ? ' active' : ''}`}
+                  onClick={() => setSelectedImage(idx)}
                 >
-                  {product.shop_name || 'Unknown Shop'}
-                </Link>
-                <span className="stock-status">
-                  {product.stock > 0 ? `${product.stock} in Stock` : 'Out of Stock'}
-                </span>
-              </div>
+                  <img src={img} alt="" />
+                </button>
+              ))}
             </div>
-
-            <div className="price-section">
-              <span className="price">R{product.price}</span>
-              {product.original_price && (
-                <span className="original-price">R{product.original_price}</span>
-              )}
-            </div>
-
-            <div className="product-description">
-              <h2>Description</h2>
-              <p>{product.description}</p>
-            </div>
-
-            <div className="product-features">
-              <h2>Features</h2>
-              <ul>
-                {product.features?.map((feature, index) => (
-                  <li key={index}>{feature}</li>
-                )) || (
-                    <>
-                      <li>High-quality materials</li>
-                      <li>Handcrafted with care</li>
-                      <li>Unique design</li>
-                    </>
-                  )}
-              </ul>
-            </div>
-
-            <div className="purchase-section">
-              <div className="quantity-selector">
-                <label>Quantity:</label>
-                <div className="quantity-controls">
-                  <button
-                    onClick={() => handleQuantityChange(quantity - 1)}
-                    disabled={quantity <= 1}
-                    className="quantity-btn"
-                  >
-                    -
-                  </button>
-                  <input
-                    type="number"
-                    min="1"
-                    max={product.stock}
-                    value={quantity}
-                    onChange={(e) => handleQuantityChange(parseInt(e.target.value) || 1)}
-                    className="quantity-input"
-                  />
-                  <button
-                    onClick={() => handleQuantityChange(quantity + 1)}
-                    disabled={quantity >= product.stock}
-                    className="quantity-btn"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              <button
-                className="add-to-cart-btn"
-                onClick={addToCart}
-                disabled={addingToCart || product.stock === 0 || !isAuthenticated}
-              >
-                {!isAuthenticated ? 'Login to Add to Cart' :
-                  addingToCart ? 'Adding...' :
-                    product.stock === 0 ? 'Out of Stock' :
-                      'Add to Cart'}
-              </button>
-            </div>
+          )}
+        </section>
+        <section className="product-info-section">
+          <div className="product-title-row">
+            <h1 className="product-title">{product.title}</h1>
+            <span className="product-stock">{product.stock > 0 ? `${product.stock} in Stock` : 'Out of Stock'}</span>
           </div>
-        </div>
+          <div className="product-meta-row">
+            <Link
+              to={`/seller/${encodeURIComponent(product.shop_name || 'Unknown Shop')}`}
+              className="seller-link"
+            >
+              {product.shop_name || 'Unknown Shop'}
+            </Link>
+          </div>
+          <div className="product-price-row">
+            <span className="product-price">R{product.price}</span>
+            {product.original_price && (
+              <span className="product-original-price">R{product.original_price}</span>
+            )}
+          </div>
+          <div className="product-section-card">
+            <h2>Description</h2>
+            <p>{product.description}</p>
+          </div>
+          <div className="product-section-card">
+            <h2>Features</h2>
+            <ul>
+              {(product.features || []).length > 0 ? (
+                product.features.map((feature, i) => <li key={i}>{feature}</li>)
+              ) : (
+                <>
+                  <li>High-quality materials</li>
+                  <li>Handcrafted with care</li>
+                  <li>Unique design</li>
+                </>
+              )}
+            </ul>
+          </div>
+          <div className="product-purchase-row">
+            <div className="quantity-selector">
+              <button className="quantity-btn" onClick={() => handleQuantityChange(quantity - 1)} disabled={quantity <= 1}>-</button>
+              <input
+                className="quantity-input"
+                type="number"
+                min="1"
+                max={product.stock}
+                value={quantity}
+                onChange={e => handleQuantityChange(Number(e.target.value) || 1)}
+              />
+              <button className="quantity-btn" onClick={() => handleQuantityChange(quantity + 1)} disabled={quantity >= product.stock}>+</button>
+            </div>
+            <button
+              className="add-to-cart-btn"
+              onClick={addToCart}
+              disabled={addingToCart || product.stock === 0 || !isAuthenticated}
+            >
+              {!isAuthenticated ? 'Login to Add to Cart' : addingToCart ? 'Adding...' : product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
+            </button>
+          </div>
+        </section>
       </div>
     </main>
   );
