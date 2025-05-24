@@ -160,13 +160,20 @@ app.post('/api/products', async (req, res) => {
 // API endpoint to get all products
 app.get('/api/products', async (req, res) => {
     try {
-        const products = await sql`
+        const limit = req.query.limit ? parseInt(req.query.limit) : null;
+        
+        let query = sql`
             SELECT p.product_id, p.seller_id, p.title, p.description, p.price, p.stock, p.image_url, s.shop_name
             FROM products p
             LEFT JOIN seller s ON p.seller_id = s.seller_id
-            ORDER BY p.product_id DESC
+            ORDER BY p.product_id ASC
         `;
 
+        if (limit) {
+            query = sql`${query} LIMIT ${limit}`;
+        }
+
+        const products = await query;
         res.json(products);
     } catch (err) {
         console.error('Error fetching products:', err);
