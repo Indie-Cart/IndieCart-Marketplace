@@ -9,7 +9,7 @@ IndieCart is a local artisan marketplace built to empower independent artists an
 |--------------|-------------|-------------|---------|----------------|
 | React + Vite | Express.js  | PostgreSQL  | Jest    | GitHub Actions |
 
-### 🧩  Unified Deployment
+### 📦 Unified Deployment
 
 The Express backend serves the compiled React frontend, enabling full-stack deployment from a single server.
 
