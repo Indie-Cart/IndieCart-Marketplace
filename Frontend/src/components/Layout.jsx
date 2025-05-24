@@ -61,7 +61,9 @@ function Layout({ children }) {
       <header className="header">
         <section className="container header-flex">
           <div className="header-left">
-            <h1 className="shop-name">IndieCart</h1>
+            <Link to="/" onClick={() => setIsMobileMenuOpen(false)}>
+              <h1 className="shop-name">IndieCart</h1>
+            </Link>
             <button className="mobile-menu-btn" onClick={toggleMobileMenu} aria-label="Toggle menu">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 {isMobileMenuOpen ? (

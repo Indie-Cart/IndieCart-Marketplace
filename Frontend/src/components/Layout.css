@@ -32,6 +32,10 @@
   gap: 1rem;
 }
 
+.header-left a {
+  text-decoration: none;
+}
+
 .shop-name {
   font-size: 1.8rem;
   font-weight: 800;
@@ -227,6 +231,13 @@ nav a.active {
 
   .header .container.header-flex {
     padding: 0.8rem 1rem;
+  }
+
+  .header-left {
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
   }
 
   .nav-menu {
